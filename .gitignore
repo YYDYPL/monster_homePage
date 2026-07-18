@@ -29,6 +29,8 @@ uploads/
 backups/
 *.sql
 *.dump
+# Deployment artifacts
+deploy.tar.gz
 # Deployment state (generated on the server)
 .deploy-images.env
 .deploy-images.good.env
