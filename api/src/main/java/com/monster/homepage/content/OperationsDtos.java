@@ -42,4 +42,41 @@ public final class OperationsDtos {
     public record PathMetric(String path, long views) {}
     public record AnalyticsSummary(long totalViews, long todayViews, long last7Days, long last30Days,
                                    long uniqueVisitors30Days, List<DailyMetric> daily, List<PathMetric> topPaths) {}
+
+    public record UserItem(UUID id, String username, String role, boolean enabled, Instant createdAt) {}
+    public record UserRequest(
+            @NotBlank @Size(max = 80) String username,
+            @Size(min = 6, max = 128) String password,
+            @Size(max = 30) String role,
+            Boolean enabled
+    ) {}
+
+    public record ProfileAbout(
+            String profileName,
+            String profileTagline,
+            String profileBio,
+            String story1,
+            String story2,
+            List<SkillGroup> skillGroups,
+            List<TimelineEntry> timeline
+    ) {}
+    public record SkillGroup(String title, List<String> items) {}
+    public record TimelineEntry(String period, String title, String description) {}
+
+    public record ProfileResume(
+            String name, String title, String email, String website, String location,
+            String profile, String coreSkills, String engineeringSkills,
+            List<ResumeProjectEntry> projects,
+            String education, String educationDetail
+    ) {}
+    public record ResumeProjectEntry(String name, String description, String responsibilities) {}
+
+    public record ProfileUses(List<UseGroup> groups) {}
+    public record UseGroup(String title, List<UseItem> items) {}
+    public record UseItem(String name, String description) {}
+
+    public record ProfileLinks(List<LinkEntry> links) {}
+    public record LinkEntry(String name, String url, String description) {}
+
+    public record FullProfile(ProfileAbout about, ProfileResume resume, ProfileUses uses, ProfileLinks links) {}
 }

@@ -1,7 +1,13 @@
 {$CADDY_SCHEME:}{$DOMAIN:localhost} {
 	encode zstd gzip
 
-	@api path /api/*
+	@proxyDownload path /api/admin/media/proxy-download*
+
+	handle @proxyDownload {
+		reverse_proxy web:3000
+	}
+
+	@api path /api/* /uploads/*
 	handle @api {
 		request_body {
 			max_size 10MB

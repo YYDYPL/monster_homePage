@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Markdown } from "@/components/markdown";
@@ -16,6 +17,7 @@ import {
   type AdminPage,
   type EditableItem,
 } from "@/lib/admin-api";
+import { handleContentPaste } from "@/lib/paste-image";
 import { flattenNoteTree, siblingNotes } from "@/lib/note-tree";
 
 type NoteForm = {
@@ -103,11 +105,21 @@ export function NoteManager() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pasteUploading, setPasteUploading] = useState(false);
   const [moving, setMoving] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<Notice>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    const handler = (e: ClipboardEvent) => { handleContentPaste(e, setPasteUploading); };
+    el.addEventListener("paste", handler);
+    return () => el.removeEventListener("paste", handler);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -419,6 +431,7 @@ export function NoteManager() {
               <label htmlFor="note-content">Markdown 正文</label>
               <div className="note-editor-workspace">
                 <textarea
+                  ref={editorRef}
                   className="form-control note-content-input"
                   id="note-content"
                   required
@@ -439,6 +452,7 @@ export function NoteManager() {
               <a className="button small" href={`/notes/${form.slug}`} rel="noreferrer" target="_blank">公开预览</a>
             )}
             <button className="button small" onClick={() => setEditing(false)} type="button">取消</button>
+            {pasteUploading && <span style={{color:"var(--accent-strong)",fontSize:12}}>正在上传粘贴的图片…</span>}
             <button className="button primary small" disabled={saving} type="submit">
               {saving ? "保存中…" : "保存笔记"}
             </button>

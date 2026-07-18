@@ -29,6 +29,7 @@ export type EditableItem = {
   createdAt?: string;
 };
 export type MediaItem = { id: string; originalName: string; contentType: string; sizeBytes: number; url: string; createdAt: string };
+export type AdminUserItem = { id: string; username: string; role: string; enabled: boolean; createdAt: string };
 export type MessageStatus = "NEW" | "READ" | "ARCHIVED";
 export type MessageItem = { id: string; name: string; email: string; subject: string; message: string; status: MessageStatus; createdAt: string };
 export type SiteConfig = {

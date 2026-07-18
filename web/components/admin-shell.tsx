@@ -16,7 +16,9 @@ const nav = [
   { href: "/admin/messages", label: "联系消息", icon: "08" },
   { href: "/admin/analytics", label: "访问统计", icon: "09" },
   { href: "/admin/settings", label: "网站设置", icon: "10" },
-  { href: "/admin/audit-logs", label: "审计日志", icon: "11" },
+  { href: "/admin/profile", label: "个人资料", icon: "11" },
+  { href: "/admin/users", label: "用户管理", icon: "12" },
+  { href: "/admin/audit-logs", label: "审计日志", icon: "13" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -47,7 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return <div className="admin-layout">
     <aside className="admin-sidebar">
       <Link className="brand" href="/admin">
-        <span className="brand-mark">M</span>
+        <img className="brand-mark" src="/logo.png" alt="" width="37" height="37" />
         <span className="brand-copy"><strong>MONSTER</strong><small>CONTROL PANEL</small></span>
       </Link>
       <nav className="admin-nav">
