@@ -1,0 +1,105 @@
+name: monster-homepage
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-monster_homepage}
+      POSTGRES_USER: ${DB_USER:-monster}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-monster} -d ${DB_NAME:-monster_homepage}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  api:
+    build:
+      context: ./api
+    image: ${API_IMAGE:-monster-homepage-api:local}
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-monster_homepage}
+      DB_USER: ${DB_USER:-monster}
+      DB_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?请在 .env 中设置 ADMIN_PASSWORD}
+      APP_SEED_DATA: ${APP_SEED_DATA:-true}
+      APP_STORAGE_PATH: /app/uploads
+      ANALYTICS_SALT: ${ANALYTICS_SALT:?请在 .env 中设置 ANALYTICS_SALT}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:-8h}
+      FRONTEND_URL: https://${DOMAIN:-localhost}
+      TZ: Asia/Shanghai
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=70 -XX:+UseG1GC}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose: ["8080"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [internal]
+
+  web:
+    build:
+      context: ./web
+    image: ${WEB_IMAGE:-monster-homepage-web:local}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:8080
+      SITE_URL: https://${DOMAIN:-localhost}
+      TZ: Asia/Shanghai
+    depends_on:
+      api:
+        condition: service_healthy
+    expose: ["3000"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [internal]
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      CADDY_SCHEME: ${CADDY_SCHEME:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    networks: [internal]
+
+volumes:
+  postgres_data:
+  uploads_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge
+

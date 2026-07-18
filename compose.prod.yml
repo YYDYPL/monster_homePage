@@ -1,0 +1,9 @@
+services:
+  api:
+    build: null
+    image: ${API_IMAGE:?请设置 API_IMAGE}
+    pull_policy: always
+  web:
+    build: null
+    image: ${WEB_IMAGE:?请设置 WEB_IMAGE}
+    pull_policy: always

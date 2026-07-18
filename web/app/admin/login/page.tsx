@@ -1,0 +1,1 @@
+import {Suspense} from "react";import {AdminLoginForm} from "@/components/admin-login-form";export default function LoginPage(){return <Suspense fallback={<div className="admin-loading"><span>正在加载登录页面…</span></div>}><AdminLoginForm/></Suspense>}

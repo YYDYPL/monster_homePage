@@ -1,0 +1,217 @@
+name: Build and deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DB_PASSWORD: deploy-ci-db-password
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: deploy-ci-admin-password
+      ANALYTICS_SALT: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      DOMAIN: 127.0.0.1
+      CADDY_SCHEME: http://
+      SESSION_COOKIE_SECURE: "false"
+      SMOKE_BASE_URL: http://127.0.0.1
+      SMOKE_INSECURE_TLS: "false"
+    outputs:
+      namespace: ${{ steps.vars.outputs.namespace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Verify Spring Boot API
+        working-directory: api
+        run: mvn --batch-mode verify
+      - name: Verify Next.js web
+        working-directory: web
+        env:
+          API_INTERNAL_URL: http://127.0.0.1:8080
+          SITE_URL: https://example.com
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+      - name: Build and start integration stack
+        run: docker compose up -d --build --wait --wait-timeout 240
+      - name: Run integration smoke test
+        run: python3 scripts/integration-smoke.py
+      - name: Print integration status and logs
+        if: always()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail=300
+      - name: Stop integration stack
+        if: always()
+        run: docker compose down --remove-orphans
+      - id: vars
+        shell: bash
+        run: echo "namespace=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
+          tags: ghcr.io/${{ steps.vars.outputs.namespace }}/monster-homepage-api:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          tags: ghcr.io/${{ steps.vars.outputs.namespace }}/monster-homepage-web:${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+      - name: Upload deployment configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" sh -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -eu
+          mkdir -p "$1"
+          REMOTE
+          scp docker-compose.yml compose.prod.yml Caddyfile "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+          scp -r scripts "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" sh -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -eu
+          chmod +x "$1"/scripts/*.sh
+          REMOTE
+      - name: Back up current data
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" sh -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -eu
+          cd "$1"
+          if [ -f .env ] && [ -n "$(docker compose --env-file .env -f docker-compose.yml ps -a -q postgres 2>/dev/null)" ]; then
+            ./scripts/backup.sh
+          else
+            echo "[deploy] first deployment: backup skipped"
+          fi
+          REMOTE
+      - name: Pull images and restart
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.DEPLOY_GHCR_TOKEN }}
+          NAMESPACE: ${{ needs.images.outputs.namespace }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          API_IMAGE="ghcr.io/$NAMESPACE/monster-homepage-api:$IMAGE_TAG"
+          WEB_IMAGE="ghcr.io/$NAMESPACE/monster-homepage-web:$IMAGE_TAG"
+          printf '%s' "$GHCR_TOKEN" | ssh "$DEPLOY_USER@$DEPLOY_HOST" docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" sh -s -- "$DEPLOY_PATH" "$API_IMAGE" "$WEB_IMAGE" <<'REMOTE'
+          set -eu
+          cd "$1"
+          test -f .env
+          if [ ! -f .deploy-images.good.env ] && [ -f .deploy-images.env ] && [ ! -f .deploy-in-progress ]; then
+            cp .deploy-images.env .deploy-images.good.env
+          fi
+          touch .deploy-in-progress
+          printf 'API_IMAGE=%s\nWEB_IMAGE=%s\n' "$2" "$3" > .deploy-images.env.tmp
+          mv .deploy-images.env.tmp .deploy-images.env
+          docker compose --env-file .env --env-file .deploy-images.env -f docker-compose.yml -f compose.prod.yml pull
+          docker compose --env-file .env --env-file .deploy-images.env -f docker-compose.yml -f compose.prod.yml up -d --no-build --remove-orphans
+          REMOTE
+      - name: Verify production health
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+        run: |
+          for _ in {1..18}; do
+            if curl --fail --silent --show-error "$SITE_URL/api/health"; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Finalize deployment
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" sh -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -eu
+          cd "$1"
+          cp .deploy-images.env .deploy-images.good.env.tmp
+          mv .deploy-images.good.env.tmp .deploy-images.good.env
+          rm -f .deploy-in-progress
+          REMOTE
+      - name: Roll back failed deployment
+        if: failure()
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" sh -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -eu
+          cd "$1"
+          if [ -f .deploy-in-progress ]; then
+            if [ -f .deploy-images.env ]; then
+              cp .deploy-images.env .deploy-images.failed.env
+            fi
+            if [ -f .deploy-images.good.env ]; then
+              cp .deploy-images.good.env .deploy-images.env.tmp
+              mv .deploy-images.env.tmp .deploy-images.env
+              docker compose --env-file .env --env-file .deploy-images.env -f docker-compose.yml -f compose.prod.yml pull
+              docker compose --env-file .env --env-file .deploy-images.env -f docker-compose.yml -f compose.prod.yml up -d --no-build --remove-orphans
+              rm -f .deploy-in-progress
+              echo "[deploy] rollback completed"
+            else
+              rm -f .deploy-in-progress
+              echo "[deploy] no verified previous release is available; failed images were recorded"
+            fi
+          else
+            echo "[deploy] rollback not required"
+          fi
+          REMOTE

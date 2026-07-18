@@ -1,0 +1,42 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/npm-debug.log*
+
+# Java / Maven
+api/target/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local data and backups
+uploads/
+backups/
+*.sql
+*.dump
+# Deployment state (generated on the server)
+.deploy-images.env
+.deploy-images.good.env
+.deploy-images.failed.env
+.deploy-images.env.tmp
+.deploy-images.good.env.tmp
+.deploy-in-progress
+
+# Local Codex/debug artifacts
+.reasonix/
+notes-page.png
