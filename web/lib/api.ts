@@ -100,6 +100,23 @@ export type SiteConfig = {
   footerText: string;
   icpNumber: string;
   publicSecurityNumber: string;
+  avatarUrl: string;
+  heroEyebrow: string;
+  heroTitleLine1: string;
+  heroTitleLine2: string;
+  heroTitleLine3: string;
+  heroDescription: string;
+  heroPrimaryText: string;
+  heroPrimaryUrl: string;
+  heroSecondaryText: string;
+  heroSecondaryUrl: string;
+  heroImageUrl: string;
+  wechat: string;
+  wechatQrCodeUrl: string;
+  qq: string;
+  qqUrl: string;
+  xiaohongshuUrl: string;
+  douyinUrl: string;
 };
 
 const INTERNAL_API = process.env.API_INTERNAL_URL || process.env.BACKEND_URL || "http://localhost:8080";
@@ -149,8 +166,8 @@ export const getProjects = (page = 1, size = 20) =>
   apiFetch<PageResponse<ProjectSummary>>(`/api/projects?page=${page}&size=${size}`);
 export const getProject = (slug: string) =>
   apiFetch<ProjectDetail>(`/api/projects/${encodeURIComponent(slug)}`);
-export const getSiteConfig = () =>
-  apiFetch<SiteConfig>("/api/site-config", { next: { revalidate: 300 } });
+export const getSiteConfig = (fresh = false) =>
+  apiFetch<SiteConfig>("/api/site-config", fresh ? { cache: "no-store" } : { next: { revalidate: 300 } });
 export const searchContent = (q: string) =>
   apiFetch<SearchResult[]>(`/api/search?q=${encodeURIComponent(q)}`);
 
@@ -161,12 +178,29 @@ export const fallbackSiteConfig: SiteConfig = {
   headline: "计算机专业 · Java / Web / 系统工程",
   location: "China",
   email: "",
-  githubUrl: "https://github.com/",
+  githubUrl: "",
   linkedinUrl: "",
   xUrl: "",
   footerText: "Build · Learn · Share",
   icpNumber: "",
   publicSecurityNumber: "",
+  avatarUrl: "",
+  heroEyebrow: "Hello, world",
+  heroTitleLine1: "\u6784\u5efa\u7cfb\u7edf\uff0c",
+  heroTitleLine2: "\u6c89\u6dc0\u77e5\u8bc6\uff0c",
+  heroTitleLine3: "\u6301\u7eed\u8fdb\u5316\u3002",
+  heroDescription: "\u8fd9\u91cc\u662f\u6211\u7684\u6280\u672f\u535a\u5ba2\u3001\u77e5\u8bc6\u5e93\u3001\u9879\u76ee\u6863\u6848\u548c\u7ebf\u4e0a\u5b9e\u9a8c\u573a\u3002",
+  heroPrimaryText: "\u63a2\u7d22\u6211\u7684\u9879\u76ee",
+  heroPrimaryUrl: "/projects",
+  heroSecondaryText: "\u4e86\u89e3\u66f4\u591a",
+  heroSecondaryUrl: "/about",
+  heroImageUrl: "",
+  wechat: "",
+  wechatQrCodeUrl: "",
+  qq: "",
+  qqUrl: "",
+  xiaohongshuUrl: "",
+  douyinUrl: "",
 };
 
 const now = "2026-07-18T00:00:00Z";

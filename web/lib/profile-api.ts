@@ -34,13 +34,13 @@ export type ProfileUses = {
 };
 
 export type UseGroup = { title: string; items: UseItem[] };
-export type UseItem = { name: string; description: string };
+export type UseItem = { name: string; description: string; url?: string; imageUrl?: string };
 
 export type ProfileLinks = {
   links: LinkEntry[];
 };
 
-export type LinkEntry = { name: string; url: string; description: string };
+export type LinkEntry = { name: string; url: string; description: string; imageUrl?: string };
 
 export type FullProfile = {
   about: ProfileAbout | null;

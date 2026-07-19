@@ -6,10 +6,9 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import { Markdown } from "@/components/markdown";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import {
   adminGet,
   adminMutation,
@@ -17,7 +16,6 @@ import {
   type AdminPage,
   type EditableItem,
 } from "@/lib/admin-api";
-import { handleContentPaste } from "@/lib/paste-image";
 import { flattenNoteTree, siblingNotes } from "@/lib/note-tree";
 
 type NoteForm = {
@@ -105,21 +103,11 @@ export function NoteManager() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [pasteUploading, setPasteUploading] = useState(false);
   const [moving, setMoving] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<Notice>(null);
-  const editorRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    const el = editorRef.current;
-    if (!el) return;
-    const handler = (e: ClipboardEvent) => { handleContentPaste(e, setPasteUploading); };
-    el.addEventListener("paste", handler);
-    return () => el.removeEventListener("paste", handler);
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -428,22 +416,15 @@ export function NoteManager() {
             </div>
 
             <div className="form-field span-2">
-              <label htmlFor="note-content">Markdown 正文</label>
-              <div className="note-editor-workspace">
-                <textarea
-                  ref={editorRef}
-                  className="form-control note-content-input"
-                  id="note-content"
-                  required
-                  value={form.content}
-                  onChange={(event) => change("content", event.target.value)}
-                  placeholder={"## 本节标题\n\n使用 Markdown 编写正文。H2/H3/H4 会自动生成右侧目录。"}
-                />
-                <div className="note-editor-preview">
-                  <span>实时预览</span>
-                  {form.content ? <Markdown content={form.content} /> : <p>输入 Markdown 后在这里预览。</p>}
-                </div>
-              </div>
+              <MarkdownEditor
+                id="note-content"
+                label="Markdown / HTML 正文"
+                minHeight={440}
+                onChange={(value) => change("content", value)}
+                placeholder={"## 本节标题\n\n可直接粘贴语雀、Notion 或其他来源的 Markdown / HTML。"}
+                required
+                value={form.content}
+              />
             </div>
           </div>
 
@@ -452,7 +433,6 @@ export function NoteManager() {
               <a className="button small" href={`/notes/${form.slug}`} rel="noreferrer" target="_blank">公开预览</a>
             )}
             <button className="button small" onClick={() => setEditing(false)} type="button">取消</button>
-            {pasteUploading && <span style={{color:"var(--accent-strong)",fontSize:12}}>正在上传粘贴的图片…</span>}
             <button className="button primary small" disabled={saving} type="submit">
               {saving ? "保存中…" : "保存笔记"}
             </button>

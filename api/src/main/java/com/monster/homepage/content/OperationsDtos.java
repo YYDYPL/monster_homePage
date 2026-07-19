@@ -31,7 +31,24 @@ public final class OperationsDtos {
             @Size(max = 500) String xUrl,
             @Size(max = 300) String footerText,
             @Size(max = 120) String icpNumber,
-            @Size(max = 120) String publicSecurityNumber
+            @Size(max = 120) String publicSecurityNumber,
+            @Size(max = 500) String avatarUrl,
+            @Size(max = 500) String heroEyebrow,
+            @Size(max = 180) String heroTitleLine1,
+            @Size(max = 180) String heroTitleLine2,
+            @Size(max = 180) String heroTitleLine3,
+            @Size(max = 1000) String heroDescription,
+            @Size(max = 120) String heroPrimaryText,
+            @Size(max = 500) String heroPrimaryUrl,
+            @Size(max = 120) String heroSecondaryText,
+            @Size(max = 500) String heroSecondaryUrl,
+            @Size(max = 500) String heroImageUrl,
+            @Size(max = 120) String wechat,
+            @Size(max = 500) String wechatQrCodeUrl,
+            @Size(max = 120) String qq,
+            @Size(max = 500) String qqUrl,
+            @Size(max = 500) String xiaohongshuUrl,
+            @Size(max = 500) String douyinUrl
     ) {}
 
     public record PageViewRequest(
@@ -73,10 +90,10 @@ public final class OperationsDtos {
 
     public record ProfileUses(List<UseGroup> groups) {}
     public record UseGroup(String title, List<UseItem> items) {}
-    public record UseItem(String name, String description) {}
+    public record UseItem(String name, String description, String url, String imageUrl) {}
 
     public record ProfileLinks(List<LinkEntry> links) {}
-    public record LinkEntry(String name, String url, String description) {}
+    public record LinkEntry(String name, String url, String description, String imageUrl) {}
 
     public record FullProfile(ProfileAbout about, ProfileResume resume, ProfileUses uses, ProfileLinks links) {}
 }

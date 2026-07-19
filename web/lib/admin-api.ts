@@ -45,6 +45,23 @@ export type SiteConfig = {
   footerText: string;
   icpNumber: string;
   publicSecurityNumber: string;
+  avatarUrl: string;
+  heroEyebrow: string;
+  heroTitleLine1: string;
+  heroTitleLine2: string;
+  heroTitleLine3: string;
+  heroDescription: string;
+  heroPrimaryText: string;
+  heroPrimaryUrl: string;
+  heroSecondaryText: string;
+  heroSecondaryUrl: string;
+  heroImageUrl: string;
+  wechat: string;
+  wechatQrCodeUrl: string;
+  qq: string;
+  qqUrl: string;
+  xiaohongshuUrl: string;
+  douyinUrl: string;
 };
 export type AnalyticsData = {
   totalViews: number;
