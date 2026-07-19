@@ -1,1 +1,84 @@
-import type {Metadata} from "next";import Link from "next/link";import {notFound} from "next/navigation";import {Markdown} from "@/components/markdown";import {formatDate,Tags} from "@/components/ui";import {getPost} from "@/lib/api";export const dynamic="force-dynamic";export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{const{slug}=await params;const response=await getPost(slug);if(!response.success)return{title:"文章"};return{title:response.data.title,description:response.data.summary,openGraph:{type:"article",title:response.data.title,description:response.data.summary,publishedTime:response.data.publishedAt,modifiedTime:response.data.updatedAt}}}export default async function PostPage({params}:{params:Promise<{slug:string}>}){const{slug}=await params;const response=await getPost(slug);if(!response.success||!response.data)notFound();const post=response.data;return <article className="article-shell">{post.coverImageUrl&&<div className="article-cover"><img src={post.coverImageUrl} alt={post.title}/></div>}<div className="container article-layout"><div><header className="article-header"><p className="eyebrow">{post.series||"Technical writing"}</p><h1>{post.title}</h1>{post.summary&&<p className="article-summary">{post.summary}</p>}<div className="article-meta"><span>发布于 {formatDate(post.publishedAt)}</span><span>更新于 {formatDate(post.updatedAt)}</span><span>约 {Math.max(1,Math.ceil(post.content.length/800))} 分钟阅读</span></div><Tags tags={post.tags||[]}/></header><Markdown content={post.content}/></div><aside className="article-aside"><h3>文章导航</h3><Link href="/blog">← 返回博客</Link><Link href="/search">搜索相关内容</Link><Link href="/contact">讨论这篇文章</Link><div className="share-line"><h3>内容许可</h3><p style={{color:"var(--text-3)",fontSize:12,lineHeight:1.6}}>如需转载或引用，请注明来源并保留原文链接。</p></div></aside></div></article>}
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ContentExport } from "@/components/content-export";
+import { Markdown } from "@/components/markdown";
+import { formatDate, Tags } from "@/components/ui";
+import { getPost } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const response = await getPost(slug);
+  if (!response.success) return { title: "文章" };
+  return {
+    title: response.data.title,
+    description: response.data.summary,
+    openGraph: {
+      type: "article",
+      title: response.data.title,
+      description: response.data.summary,
+      publishedTime: response.data.publishedAt,
+      modifiedTime: response.data.updatedAt,
+    },
+  };
+}
+
+export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const response = await getPost(slug);
+  if (!response.success || !response.data) notFound();
+  const post = response.data;
+
+  return (
+    <article className="article-shell">
+      {post.coverImageUrl && (
+        <div className="article-cover"><img src={post.coverImageUrl} alt={post.title} /></div>
+      )}
+      <div className="container article-layout article-layout-wide">
+        <div id="article-export-source" className="export-content-source">
+          <header className="article-header">
+            <p className="eyebrow">{post.series || "Technical writing"}</p>
+            <h1>{post.title}</h1>
+            {post.summary && <p className="article-summary">{post.summary}</p>}
+            <div className="article-meta">
+              <span>发布于 {formatDate(post.publishedAt)}</span>
+              <span>更新于 {formatDate(post.updatedAt)}</span>
+              <span>约 {Math.max(1, Math.ceil(post.content.length / 800))} 分钟阅读</span>
+            </div>
+            <Tags tags={post.tags || []} />
+          </header>
+          <Markdown content={post.content} />
+        </div>
+
+        <aside className="article-aside">
+          <h3>文章导航</h3>
+          <Link href="/blog">← 返回博客</Link>
+          <Link href="/search">搜索相关内容</Link>
+          <Link href="/contact">讨论这篇文章</Link>
+          <ContentExport
+            content={post.content}
+            contentType="article"
+            publishedAt={post.publishedAt}
+            sourceId="article-export-source"
+            summary={post.summary}
+            tags={post.tags || []}
+            title={post.title}
+            updatedAt={post.updatedAt}
+          />
+          <div className="share-line">
+            <h3>内容许可</h3>
+            <p style={{ color: "var(--text-3)", fontSize: 12, lineHeight: 1.6 }}>
+              如需转载或引用，请注明来源并保留原文链接。
+            </p>
+          </div>
+        </aside>
+      </div>
+    </article>
+  );
+}

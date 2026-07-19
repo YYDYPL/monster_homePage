@@ -29,7 +29,7 @@ export function AuditLogManager() {
     let active = true;
     adminGet<PageResponse<AuditLogItem>>(`/api/admin/audit-logs?page=${page}&size=${pageSize}`)
       .then((response) => { if (active) setResult(response.data); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "\u52a0\u8f7d\u5ba1\u8ba1\u8bb0\u5f55\u5931\u8d25"); })
+      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "加载审计记录失败"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [page]);

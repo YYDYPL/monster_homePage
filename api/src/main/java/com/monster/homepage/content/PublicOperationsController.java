@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,20 @@ public class PublicOperationsController {
 
     @GetMapping("/site-config")
     public ApiResponse<OperationsDtos.SiteConfig> siteConfig() { return ApiResponse.ok(settings.getConfig()); }
+
+    @PostMapping("/export/authorize")
+    public ResponseEntity<ApiResponse<OperationsDtos.ExportAuthorizationResult>> authorizeExport(
+            @Valid @RequestBody OperationsDtos.ExportAuthorizationRequest request) {
+        if (!settings.isExportKeyConfigured()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(ApiResponse.error("EXPORT_KEY_NOT_CONFIGURED", "站点尚未配置导出密钥", java.util.UUID.randomUUID().toString()));
+        }
+        if (!settings.verifyExportKey(request.key())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("EXPORT_KEY_INVALID", "导出密钥不正确", java.util.UUID.randomUUID().toString()));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(new OperationsDtos.ExportAuthorizationResult(true)));
+    }
 
     @GetMapping("/media/{storedName:.+}")
     public ResponseEntity<Resource> media(@PathVariable String storedName) {

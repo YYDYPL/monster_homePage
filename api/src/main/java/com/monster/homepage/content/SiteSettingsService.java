@@ -1,5 +1,6 @@
 package com.monster.homepage.content;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,13 +10,18 @@ import java.util.stream.Collectors;
 
 @Service
 public class SiteSettingsService {
-    private final SiteSettingRepository repository;
+    private static final String EXPORT_KEY_HASH = "exportKeyHash";
 
-    public SiteSettingsService(SiteSettingRepository repository) { this.repository = repository; }
+    private final SiteSettingRepository repository;
+    private final PasswordEncoder passwordEncoder;
+
+    public SiteSettingsService(SiteSettingRepository repository, PasswordEncoder passwordEncoder) {
+        this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public OperationsDtos.SiteConfig getConfig() {
-        Map<String, String> values = repository.findAll().stream()
-                .collect(Collectors.toMap(SiteSetting::getKey, setting -> setting.getValue() == null ? "" : setting.getValue(), (a, b) -> b));
+        Map<String, String> values = allValues();
         return new OperationsDtos.SiteConfig(
                 value(values, "siteName", "Monster"),
                 value(values, "siteDescription", "个人技术品牌主页、博客、知识库与项目作品集"),
@@ -49,8 +55,37 @@ public class SiteSettingsService {
         );
     }
 
+    public OperationsDtos.AdminSiteSettings getAdminSettings() {
+        return new OperationsDtos.AdminSiteSettings(getConfig(), isExportKeyConfigured());
+    }
+
     @Transactional
-    public OperationsDtos.SiteConfig update(OperationsDtos.SiteConfig request) {
+    public OperationsDtos.AdminSiteSettings update(OperationsDtos.SiteSettingsUpdate request) {
+        saveConfig(request.site());
+        String exportKey = request.exportKey();
+        if (exportKey != null && !exportKey.isBlank()) {
+            saveValue(EXPORT_KEY_HASH, passwordEncoder.encode(exportKey.trim()));
+        }
+        return getAdminSettings();
+    }
+
+    public boolean isExportKeyConfigured() {
+        return repository.findById(EXPORT_KEY_HASH)
+                .map(SiteSetting::getValue)
+                .filter(value -> !value.isBlank())
+                .isPresent();
+    }
+
+    public boolean verifyExportKey(String candidate) {
+        if (candidate == null || candidate.isBlank()) return false;
+        return repository.findById(EXPORT_KEY_HASH)
+                .map(SiteSetting::getValue)
+                .filter(value -> !value.isBlank())
+                .map(hash -> matches(candidate, hash))
+                .orElse(false);
+    }
+
+    private void saveConfig(OperationsDtos.SiteConfig request) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("siteName", request.siteName());
         values.put("siteDescription", request.siteDescription());
@@ -81,13 +116,31 @@ public class SiteSettingsService {
         values.put("qqUrl", request.qqUrl());
         values.put("xiaohongshuUrl", request.xiaohongshuUrl());
         values.put("douyinUrl", request.douyinUrl());
-        values.forEach((key, rawValue) -> {
-            String value = rawValue == null ? "" : rawValue.trim();
-            SiteSetting setting = repository.findById(key).orElseGet(() -> new SiteSetting(key, value));
-            setting.setValue(value);
-            repository.save(setting);
-        });
-        return getConfig();
+        values.forEach(this::saveValue);
+    }
+
+    private Map<String, String> allValues() {
+        return repository.findAll().stream()
+                .collect(Collectors.toMap(
+                        SiteSetting::getKey,
+                        setting -> setting.getValue() == null ? "" : setting.getValue(),
+                        (a, b) -> b
+                ));
+    }
+
+    private void saveValue(String key, String rawValue) {
+        String nextValue = rawValue == null ? "" : rawValue.trim();
+        SiteSetting setting = repository.findById(key).orElseGet(() -> new SiteSetting(key, nextValue));
+        setting.setValue(nextValue);
+        repository.save(setting);
+    }
+
+    private boolean matches(String candidate, String hash) {
+        try {
+            return passwordEncoder.matches(candidate.trim(), hash);
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private static String value(Map<String, String> values, String key, String fallback) {

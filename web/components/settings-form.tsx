@@ -1,7 +1,15 @@
 ﻿"use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { adminGet, adminMutation, adminUpload, type MediaItem, type SiteConfig } from "@/lib/admin-api";
+import {
+  adminGet,
+  adminMutation,
+  adminUpload,
+  type AdminSiteSettings,
+  type MediaItem,
+  type SiteConfig,
+  type SiteSettingsUpdate,
+} from "@/lib/admin-api";
 
 const empty: SiteConfig = {
   siteName: "",
@@ -80,11 +88,17 @@ export function SettingsForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [exportKey, setExportKey] = useState("");
+  const [exportKeyConfigured, setExportKeyConfigured] = useState(false);
 
   useEffect(() => {
     let active = true;
-    adminGet<SiteConfig>("/api/admin/settings")
-      .then((response) => { if (active) setForm({ ...empty, ...response.data }); })
+    adminGet<AdminSiteSettings>("/api/admin/settings")
+      .then((response) => {
+        if (!active) return;
+        setForm({ ...empty, ...response.data.site });
+        setExportKeyConfigured(response.data.exportKeyConfigured);
+      })
       .catch((reason) => { if (active) setMessage(reason instanceof Error ? reason.message : "设置加载失败"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -99,9 +113,15 @@ export function SettingsForm() {
     setSaving(true);
     setMessage("");
     try {
-      const response = await adminMutation<SiteConfig>("/api/admin/settings", { method: "PATCH", body: JSON.stringify(form) });
-      setForm({ ...empty, ...response.data });
-      setMessage("网站设置已保存，首页、关于页、联系页和页脚会读取新配置。");
+      const payload: SiteSettingsUpdate = { site: form, exportKey: exportKey.trim() || null };
+      const response = await adminMutation<AdminSiteSettings>("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      setForm({ ...empty, ...response.data.site });
+      setExportKeyConfigured(response.data.exportKeyConfigured);
+      setExportKey("");
+      setMessage("网站设置已保存，公共页面和内容导出配置会读取新设置。");
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "保存失败");
     } finally {
@@ -132,6 +152,38 @@ export function SettingsForm() {
 
             <SettingsSection description="三行主标题、说明文字和两个按钮都可以自定义。" fields={heroFields} form={form} title="首页文案" update={update} />
             <SettingsSection description="填写后会显示在关于页、联系页和页脚入口。" fields={socialFields} form={form} title="社交与联系方式" update={update} />
+
+            <section className="admin-panel settings-section">
+              <div className="panel-head">
+                <div>
+                  <h2>文章与笔记导出</h2>
+                  <p>访客导出 Markdown、HTML 或 PDF 前必须输入这里配置的密钥。密钥只保存为安全哈希，不会在公共接口或后台页面回显。</p>
+                </div>
+                <span className={`export-key-status ${exportKeyConfigured ? "configured" : ""}`}>
+                  {exportKeyConfigured ? "已配置" : "未配置"}
+                </span>
+              </div>
+              <div className="settings-section-body editor-grid">
+                <div className="form-field span-2">
+                  <label htmlFor="exportKey">{exportKeyConfigured ? "设置新的导出密钥" : "导出密钥"}</label>
+                  <input
+                    autoComplete="new-password"
+                    className="form-control"
+                    id="exportKey"
+                    minLength={8}
+                    maxLength={128}
+                    type="password"
+                    value={exportKey}
+                    placeholder={exportKeyConfigured ? "留空则保持现有密钥不变" : "至少 8 个字符"}
+                    onChange={(event) => setExportKey(event.target.value)}
+                  />
+                  <small className="field-help">
+                    {exportKeyConfigured ? "输入新值并保存即可替换原密钥；留空不会修改。" : "配置并保存后，文章与知识笔记详情页才可完成导出授权。"}
+                  </small>
+                </div>
+              </div>
+            </section>
+
             <SettingsSection description="域名和 HTTPS 仍通过服务器环境变量与 Caddy 配置管理。" fields={footerFields} form={form} title="页脚与备案" update={update} />
           </>
         )}

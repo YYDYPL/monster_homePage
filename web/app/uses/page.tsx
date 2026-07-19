@@ -14,7 +14,7 @@ export default async function UsesPage() {
       <PageHero eyebrow="Uses" title="我的装备与工具" description="不是工具收藏，而是那些真正进入日常工作流、帮助我稳定产出的软硬件。" />
       <section className="list-section">
         <div className="container uses-groups">
-          {groups.length === 0 && <p className="collection-empty">\u6682\u672a\u6dfb\u52a0\u88c5\u5907\u3002\u8bf7\u524d\u5f80\u540e\u53f0\u201c\u4e2a\u4eba\u8d44\u6599 \u2192 \u6211\u7684\u88c5\u5907\u201d\u8fdb\u884c\u914d\u7f6e\u3002</p>}
+          {groups.length === 0 && <p className="collection-empty">暂未添加装备。请前往后台“个人资料 → 我的装备”进行配置。</p>}
           {groups.map((group, groupIndex) => (
             <article className="uses-group-card" key={`${group.title}-${groupIndex}`}>
               <div className="uses-group-heading">

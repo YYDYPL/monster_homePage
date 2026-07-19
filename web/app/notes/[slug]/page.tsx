@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ContentExport } from "@/components/content-export";
 import { Markdown } from "@/components/markdown";
 import { NoteTree } from "@/components/note-tree";
 import { TableOfContents } from "@/components/table-of-contents";
@@ -59,22 +60,24 @@ export default async function NotePage({ params }: { params: Promise<{ slug: str
             ))}
           </nav>
 
-          <header className="article-header note-article-header">
-            <p className="eyebrow">{note.category || "Knowledge note"}</p>
-            <h1>{note.title}</h1>
-            {note.summary && <p className="article-summary">{note.summary}</p>}
-            <div className="article-meta">
-              <span>最近更新 {formatDate(note.updatedAt)}</span>
-              <span>目录层级 {Math.max(trail.length, 1)}</span>
-              <span>状态：持续维护</span>
-            </div>
-            <Tags tags={note.tags || []} />
-          </header>
+          <div id="note-export-source" className="export-content-source">
+            <header className="article-header note-article-header">
+              <p className="eyebrow">{note.category || "Knowledge note"}</p>
+              <h1>{note.title}</h1>
+              {note.summary && <p className="article-summary">{note.summary}</p>}
+              <div className="article-meta">
+                <span>最近更新 {formatDate(note.updatedAt)}</span>
+                <span>目录层级 {Math.max(trail.length, 1)}</span>
+                <span>状态：持续维护</span>
+              </div>
+              <Tags tags={note.tags || []} />
+            </header>
 
-          <div className="mobile-page-toc">
-            <TableOfContents headings={headings} />
+            <div className="mobile-page-toc">
+              <TableOfContents headings={headings} />
+            </div>
+            <Markdown content={note.content} />
           </div>
-          <Markdown content={note.content} />
 
           <nav className="note-sibling-nav" aria-label="相邻笔记">
             {previous ? (
@@ -94,6 +97,16 @@ export default async function NotePage({ params }: { params: Promise<{ slug: str
 
         <aside className="page-toc-sidebar">
           <TableOfContents headings={headings} />
+          <ContentExport
+            content={note.content}
+            contentType="note"
+            publishedAt={note.publishedAt}
+            sourceId="note-export-source"
+            summary={note.summary}
+            tags={note.tags || []}
+            title={note.title}
+            updatedAt={note.updatedAt}
+          />
           <div className="note-maintenance-tip">
             <strong>持续修订</strong>
             <p>知识笔记会随着实践和认知变化持续更新，不代表最终结论。</p>

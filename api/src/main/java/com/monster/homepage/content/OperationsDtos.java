@@ -1,6 +1,8 @@
 package com.monster.homepage.content;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -50,6 +52,19 @@ public final class OperationsDtos {
             @Size(max = 500) String xiaohongshuUrl,
             @Size(max = 500) String douyinUrl
     ) {}
+
+    public record AdminSiteSettings(SiteConfig site, boolean exportKeyConfigured) {}
+
+    public record SiteSettingsUpdate(
+            @NotNull @Valid SiteConfig site,
+            @Size(min = 8, max = 128) String exportKey
+    ) {}
+
+    public record ExportAuthorizationRequest(
+            @NotBlank @Size(max = 128) String key
+    ) {}
+
+    public record ExportAuthorizationResult(boolean authorized) {}
 
     public record PageViewRequest(
             @NotBlank @Size(max = 500) @Pattern(regexp = "^/.*", message = "path must start with /") String path

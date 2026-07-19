@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { fallbackSiteConfig, type SiteConfig } from "@/lib/api";
 
 const navigation = [
-  { href: "/blog", label: "\u535a\u5ba2" },
-  { href: "/notes", label: "\u77e5\u8bc6\u5e93" },
-  { href: "/projects", label: "\u9879\u76ee" },
-  { href: "/lab", label: "\u5b9e\u9a8c\u5ba4" },
-  { href: "/about", label: "\u5173\u4e8e" },
+  { href: "/blog", label: "博客" },
+  { href: "/notes", label: "知识库" },
+  { href: "/projects", label: "项目" },
+  { href: "/lab", label: "实验室" },
+  { href: "/about", label: "关于" },
 ];
 
 function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
@@ -46,20 +46,20 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="container header-inner">
-        <Link className="brand" href="/" aria-label={`${siteName} \u9996\u9875`}>
+        <Link className="brand" href="/" aria-label={`${siteName} 首页`}>
           <img className={`brand-mark ${config.avatarUrl ? "brand-avatar" : ""}`} src={config.avatarUrl || "/logo.png"} alt="" width="37" height="37" />
-          <span className="brand-copy"><strong>{siteName.toUpperCase()}</strong><small>{config.footerText || "BUILD \u00b7 LEARN \u00b7 SHARE"}</small></span>
+          <span className="brand-copy"><strong>{siteName.toUpperCase()}</strong><small>{config.footerText || "BUILD · LEARN · SHARE"}</small></span>
         </Link>
-        <nav className={`main-nav ${open ? "is-open" : ""}`} aria-label="\u4e3b\u5bfc\u822a">
+        <nav className={`main-nav ${open ? "is-open" : ""}`} aria-label="主导航">
           {navigation.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return <Link className={active ? "active" : ""} href={item.href} key={item.href} onClick={() => setOpen(false)}>{item.label}</Link>;
           })}
         </nav>
         <div className="header-actions">
-          <Link className="icon-button search-button" href="/search" aria-label="\u641c\u7d22"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg></Link>
-          <button className="icon-button" type="button" onClick={toggleTheme} aria-label="\u5207\u6362\u4e3b\u9898"><ThemeIcon theme="light" /></button>
-          <button className="menu-button" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label="\u6253\u5f00\u83dc\u5355"><span /><span /><span /></button>
+          <Link className="icon-button search-button" href="/search" aria-label="搜索"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg></Link>
+          <button className="icon-button" type="button" onClick={toggleTheme} aria-label="切换主题"><ThemeIcon theme="light" /></button>
+          <button className="menu-button" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label="打开菜单"><span /><span /><span /></button>
         </div>
       </div>
     </header>

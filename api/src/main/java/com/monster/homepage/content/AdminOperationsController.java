@@ -96,10 +96,13 @@ public class AdminOperationsController {
     }
 
     @GetMapping("/settings")
-    public ApiResponse<OperationsDtos.SiteConfig> settings() { return ApiResponse.ok(settings.getConfig()); }
+    public ApiResponse<OperationsDtos.AdminSiteSettings> settings() {
+        return ApiResponse.ok(settings.getAdminSettings());
+    }
 
     @PatchMapping("/settings")
-    public ApiResponse<OperationsDtos.SiteConfig> updateSettings(@Valid @RequestBody OperationsDtos.SiteConfig request) {
+    public ApiResponse<OperationsDtos.AdminSiteSettings> updateSettings(
+            @Valid @RequestBody OperationsDtos.SiteSettingsUpdate request) {
         return ApiResponse.ok(settings.update(request));
     }
 

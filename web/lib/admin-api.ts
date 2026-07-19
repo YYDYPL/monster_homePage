@@ -63,6 +63,16 @@ export type SiteConfig = {
   xiaohongshuUrl: string;
   douyinUrl: string;
 };
+export type AdminSiteSettings = {
+  site: SiteConfig;
+  exportKeyConfigured: boolean;
+};
+
+export type SiteSettingsUpdate = {
+  site: SiteConfig;
+  exportKey?: string | null;
+};
+
 export type AnalyticsData = {
   totalViews: number;
   todayViews: number;

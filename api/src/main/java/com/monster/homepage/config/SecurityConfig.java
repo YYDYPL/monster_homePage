@@ -38,9 +38,10 @@ public class SecurityConfig {
                     "/api/auth/logout",
                     "/api/contact",
                     "/api/analytics/page-view",
+                    "/api/export/authorize",
                     "/api/health"))
             .authorizeHttpRequests(a -> a
-                    .requestMatchers("/api/health", "/api/auth/**", "/api/posts/**", "/api/notes/**", "/api/projects/**", "/api/search", "/api/site-config", "/api/contact", "/actuator/health").permitAll()
+                    .requestMatchers("/api/health", "/api/auth/**", "/api/posts/**", "/api/notes/**", "/api/projects/**", "/api/search", "/api/site-config", "/api/export/authorize", "/api/contact", "/actuator/health").permitAll()
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .anyRequest().permitAll())
             .formLogin(f -> f
