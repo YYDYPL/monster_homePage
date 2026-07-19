@@ -138,7 +138,7 @@ export function NoteManager() {
       })
       .catch((error) => {
         if (mounted) {
-          setNotice({ type: "error", text: error instanceof Error ? error.message : "????????" });
+          setNotice({ type: "error", text: error instanceof Error ? error.message : "\u4fdd\u5b58\u7b14\u8bb0\u5931\u8d25" });
         }
       })
       .finally(() => {

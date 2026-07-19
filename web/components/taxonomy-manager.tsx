@@ -47,7 +47,7 @@ export function TaxonomyManager({ title, description, sections }: TaxonomyManage
     let active = true;
     adminGet<TaxonomySummary>("/api/admin/taxonomy")
       .then((response) => { if (active) setData(response.data); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "????????"); })
+      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "\u52a0\u8f7d\u5206\u7c7b\u5931\u8d25"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
