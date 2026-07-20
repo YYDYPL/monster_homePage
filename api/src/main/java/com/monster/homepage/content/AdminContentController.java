@@ -113,20 +113,47 @@ public class AdminContentController {
     public ApiResponse<String> deleteProject(@PathVariable UUID id) { if (!projects.existsById(id)) throw new NoSuchElementException("项目不存在"); projects.deleteById(id); return ApiResponse.ok("deleted"); }
 
     private void apply(Post post, ContentDtos.PostRequest request) {
-        post.setTitle(request.title()); post.setSlug(SlugUtil.slugify(request.slug() == null || request.slug().isBlank() ? request.title() : request.slug()));
-        post.setSummary(request.summary()); post.setContent(request.content()); post.setCoverImageUrl(request.coverImageUrl()); post.setTagsCsv(ContentDtos.join(request.tags())); post.setSeries(request.series()); post.setFeatured(request.featured());
-        post.setStatus(request.status() == null ? DRAFT : request.status()); if (post.getStatus() == PUBLISHED && post.getPublishedAt() == null) post.setPublishedAt(Instant.now());
+        String title = ContentNormalizer.required(request.title(), "title");
+        String requestedSlug = ContentNormalizer.optional(request.slug());
+        post.setTitle(title);
+        post.setSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? title : requestedSlug));
+        post.setSummary(ContentNormalizer.optional(request.summary()));
+        post.setContent(ContentNormalizer.required(request.content(), "content"));
+        post.setCoverImageUrl(ContentNormalizer.optional(request.coverImageUrl()));
+        post.setTagsCsv(ContentDtos.join(ContentNormalizer.list(request.tags())));
+        post.setSeries(ContentNormalizer.optional(request.series()));
+        post.setFeatured(request.featured());
+        post.setStatus(request.status() == null ? DRAFT : request.status());
+        if (post.getStatus() == PUBLISHED && post.getPublishedAt() == null) post.setPublishedAt(Instant.now());
     }
 
     private void apply(Note note, ContentDtos.NoteRequest request) {
-        note.setTitle(request.title()); note.setSlug(SlugUtil.slugify(request.slug() == null || request.slug().isBlank() ? request.title() : request.slug()));
-        note.setSummary(request.summary()); note.setContent(request.content()); note.setCategory(request.category()); note.setTagsCsv(ContentDtos.join(request.tags())); note.setStatus(request.status() == null ? DRAFT : request.status());
+        String title = ContentNormalizer.required(request.title(), "title");
+        String requestedSlug = ContentNormalizer.optional(request.slug());
+        note.setTitle(title);
+        note.setSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? title : requestedSlug));
+        note.setSummary(ContentNormalizer.optional(request.summary()));
+        note.setContent(ContentNormalizer.required(request.content(), "content"));
+        note.setCategory(ContentNormalizer.optional(request.category()));
+        note.setTagsCsv(ContentDtos.join(ContentNormalizer.list(request.tags())));
+        note.setStatus(request.status() == null ? DRAFT : request.status());
         if (note.getStatus() == PUBLISHED && note.getPublishedAt() == null) note.setPublishedAt(Instant.now());
     }
 
     private void apply(Project project, ContentDtos.ProjectRequest request) {
-        project.setName(request.name()); project.setSlug(SlugUtil.slugify(request.slug() == null || request.slug().isBlank() ? request.name() : request.slug()));
-        project.setSummary(request.summary()); project.setDescription(request.description()); project.setTechStackCsv(ContentDtos.join(request.techStack())); project.setStatus(request.status() == null ? ProjectStatus.EXPERIMENTAL : request.status());
-        project.setRepoUrl(request.repoUrl()); project.setDemoUrl(request.demoUrl()); project.setImageUrl(request.imageUrl()); project.setFeatured(request.featured()); project.setStartDate(request.startDate()); project.setEndDate(request.endDate());
+        String name = ContentNormalizer.required(request.name(), "name");
+        String requestedSlug = ContentNormalizer.optional(request.slug());
+        project.setName(name);
+        project.setSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? name : requestedSlug));
+        project.setSummary(ContentNormalizer.optional(request.summary()));
+        project.setDescription(ContentNormalizer.optional(request.description()));
+        project.setTechStackCsv(ContentDtos.join(ContentNormalizer.list(request.techStack())));
+        project.setStatus(request.status() == null ? ProjectStatus.EXPERIMENTAL : request.status());
+        project.setRepoUrl(ContentNormalizer.optional(request.repoUrl()));
+        project.setDemoUrl(ContentNormalizer.optional(request.demoUrl()));
+        project.setImageUrl(ContentNormalizer.optional(request.imageUrl()));
+        project.setFeatured(request.featured());
+        project.setStartDate(request.startDate());
+        project.setEndDate(request.endDate());
     }
 }

@@ -5,10 +5,37 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { fallbackSiteConfig, type SiteConfig } from "@/lib/api";
 
-const groups = [
-  { title: "内容", links: [["技术博客", "/blog"], ["知识笔记", "/notes"], ["项目作品", "/projects"], ["在线工具", "/lab"]] },
-  { title: "关于", links: [["关于我", "/about"], ["个人简历", "/resume"], ["我的装备", "/uses"], ["友情链接", "/links"]] },
-  { title: "更多", links: [["全站搜索", "/search"], ["联系我", "/contact"], ["RSS 订阅", "/rss.xml"], ["管理入口", "/admin"]] },
+type FooterLink = { label: string; href: string; newTab?: boolean };
+type FooterGroup = { title: string; links: FooterLink[] };
+
+const groups: FooterGroup[] = [
+  {
+    title: "\u5185\u5bb9",
+    links: [
+      { label: "\u6280\u672f\u535a\u5ba2", href: "/blog" },
+      { label: "\u77e5\u8bc6\u7b14\u8bb0", href: "/notes" },
+      { label: "\u9879\u76ee\u4f5c\u54c1", href: "/projects" },
+      { label: "\u5728\u7ebf\u5de5\u5177", href: "/lab" },
+    ],
+  },
+  {
+    title: "\u5173\u4e8e",
+    links: [
+      { label: "\u5173\u4e8e\u6211", href: "/about" },
+      { label: "\u4e2a\u4eba\u7b80\u5386", href: "/resume" },
+      { label: "\u6211\u7684\u88c5\u5907", href: "/uses" },
+      { label: "\u53cb\u60c5\u94fe\u63a5", href: "/links" },
+    ],
+  },
+  {
+    title: "\u66f4\u591a",
+    links: [
+      { label: "\u5168\u7ad9\u641c\u7d22", href: "/search" },
+      { label: "\u8054\u7cfb\u6211", href: "/contact" },
+      { label: "RSS \u8ba2\u9605", href: "/rss.xml" },
+      { label: "\u7ba1\u7406\u5165\u53e3", href: "/admin", newTab: true },
+    ],
+  },
 ];
 
 export function SiteFooter() {
@@ -48,7 +75,21 @@ export function SiteFooter() {
             <Link href="/rss.xml" aria-label="RSS">RSS</Link>
           </div>
         </div>
-        {groups.map((group) => <div className="footer-links" key={group.title}><h3>{group.title}</h3>{group.links.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}</div>)}
+        {groups.map((group) => (
+          <div className="footer-links" key={group.title}>
+            <h3>{group.title}</h3>
+            {group.links.map((link) => (
+              <Link
+                href={link.href}
+                key={link.href}
+                rel={link.newTab ? "noreferrer" : undefined}
+                target={link.newTab ? "_blank" : undefined}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        ))}
       </div>
       <div className="container footer-bottom"><span>© {new Date().getFullYear()} {config.ownerName || siteName}. Built with Next.js & Spring Boot.</span><span>{config.footerText}</span></div>
       {(config.icpNumber || config.publicSecurityNumber) && <div className="container filing-row">{config.icpNumber && <span>{config.icpNumber}</span>}{config.publicSecurityNumber && <span>{config.publicSecurityNumber}</span>}</div>}

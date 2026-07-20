@@ -5,6 +5,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { createHeadingIdGenerator } from "@/lib/markdown-headings";
+import rehypeSafeInlineStyles from "@/lib/markdown-inline-styles";
 
 const contentSchema = {
   ...defaultSchema,
@@ -23,6 +24,11 @@ const contentSchema = {
     span: [
       ...(defaultSchema.attributes?.span || []),
       ["className", "md-text-small", "md-text-large"],
+      "style",
+    ],
+    mark: [
+      ...(defaultSchema.attributes?.mark || []),
+      "style",
     ],
   },
 };
@@ -90,7 +96,7 @@ export function Markdown({ content }: { content: string }) {
     <div className="markdown-body">
       <ReactMarkdown
         components={components}
-        rehypePlugins={[rehypeRaw, [rehypeSanitize, contentSchema], rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeSafeInlineStyles, [rehypeSanitize, contentSchema], rehypeHighlight]}
         remarkPlugins={[remarkGfm]}
       >
         {content || ""}

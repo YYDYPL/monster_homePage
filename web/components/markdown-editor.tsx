@@ -16,6 +16,7 @@ type MarkdownEditorProps = {
 };
 
 type BlockFormat = "paragraph" | "h1" | "h2" | "h3" | "h4" | "quote" | "bullet" | "numbered";
+type CodeLanguage = "plain" | "bash" | "javascript" | "typescript" | "java" | "python" | "sql" | "json" | "html" | "css" | "yaml" | "dockerfile";
 
 const blockPrefixes: Record<BlockFormat, string> = {
   paragraph: "",
@@ -27,6 +28,21 @@ const blockPrefixes: Record<BlockFormat, string> = {
   bullet: "- ",
   numbered: "1. ",
 };
+
+const codeLanguages: Array<{ value: CodeLanguage; label: string }> = [
+  { value: "plain", label: "\u7eaf\u6587\u672c" },
+  { value: "bash", label: "Bash / Shell" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
+  { value: "java", label: "Java" },
+  { value: "python", label: "Python" },
+  { value: "sql", label: "SQL" },
+  { value: "json", label: "JSON" },
+  { value: "html", label: "HTML" },
+  { value: "css", label: "CSS" },
+  { value: "yaml", label: "YAML" },
+  { value: "dockerfile", label: "Dockerfile" },
+];
 
 export function MarkdownEditor({
   id,
@@ -42,6 +58,9 @@ export function MarkdownEditor({
   const [format, setFormat] = useState<BlockFormat>("paragraph");
   const [preview, setPreview] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [codeLanguage, setCodeLanguage] = useState<CodeLanguage>("plain");
+  const [textColor, setTextColor] = useState("#ef4444");
+  const [highlightColor, setHighlightColor] = useState("#fef08a");
 
   function updateValue(nextValue: string, cursorStart?: number, cursorEnd = cursorStart) {
     onChange(nextValue);
@@ -94,11 +113,13 @@ export function MarkdownEditor({
   function codeBlock() {
     const current = selection();
     if (!current) return;
-    const selected = current.selected || "在这里输入代码";
+    const selected = current.selected || "\u5728\u8fd9\u91cc\u8f93\u5165\u4ee3\u7801";
     const fence = "```";
-    const insertion = `${fence}\n${selected}\n${fence}`;
+    const language = codeLanguage === "plain" ? "" : codeLanguage;
+    const opening = `${fence}${language}\n`;
+    const insertion = `${opening}${selected}\n${fence}`;
     const nextValue = value.slice(0, current.start) + insertion + value.slice(current.end);
-    const nextStart = current.start + 4;
+    const nextStart = current.start + opening.length;
     updateValue(nextValue, nextStart, nextStart + selected.length);
     setFormat("paragraph");
   }
@@ -164,8 +185,44 @@ export function MarkdownEditor({
           const url = window.prompt("请输入链接地址");
           if (url) wrap("[", `](${url})`, "链接文字");
         }}>↗</ToolbarButton>
-        <ToolbarButton label="代码块" title="代码块" onClick={codeBlock}>▣</ToolbarButton>
-        <ToolbarButton disabled={uploading} label="图片" title="上传图片" onClick={() => fileRef.current?.click()}>{uploading ? "…" : "▧"}</ToolbarButton>
+        <select
+          aria-label={"\u4ee3\u7801\u8bed\u8a00"}
+          className="markdown-toolbar-select code-language-select"
+          onChange={(event) => setCodeLanguage(event.target.value as CodeLanguage)}
+          title={"\u9009\u62e9\u4ee3\u7801\u5757\u8bed\u8a00"}
+          value={codeLanguage}
+        >
+          {codeLanguages.map((language) => <option key={language.value} value={language.value}>{language.label}</option>)}
+        </select>
+        <ToolbarButton label={"\u4ee3\u7801\u5757"} title={"\u63d2\u5165\u4ee3\u7801\u5757"} onClick={codeBlock}>{"\u25a3"}</ToolbarButton>
+        <span className="toolbar-divider" />
+        <label className="markdown-color-control" title={"\u6587\u5b57\u989c\u8272"}>
+          <span style={{ color: textColor }}>A</span>
+          <input
+            aria-label={"\u6587\u5b57\u989c\u8272"}
+            onChange={(event) => {
+              const color = event.target.value;
+              setTextColor(color);
+              wrap(`<span style="color: ${color}">`, "</span>");
+            }}
+            type="color"
+            value={textColor}
+          />
+        </label>
+        <label className="markdown-color-control" title={"\u80cc\u666f\u9ad8\u4eae\u989c\u8272"}>
+          <span style={{ backgroundColor: highlightColor, color: "#111827" }}>A</span>
+          <input
+            aria-label={"\u80cc\u666f\u9ad8\u4eae\u989c\u8272"}
+            onChange={(event) => {
+              const color = event.target.value;
+              setHighlightColor(color);
+              wrap(`<span style="background-color: ${color}; padding: .08em .24em; border-radius: .25em">`, "</span>");
+            }}
+            type="color"
+            value={highlightColor}
+          />
+        </label>
+        <ToolbarButton disabled={uploading} label={"\u56fe\u7247"} title={"\u4e0a\u4f20\u56fe\u7247"} onClick={() => fileRef.current?.click()}>{uploading ? "\u2026" : "\u25a7"}</ToolbarButton>
         <input ref={fileRef} accept="image/*" hidden onChange={onFileChange} type="file" />
         <button className={`markdown-preview-toggle ${preview ? "active" : ""}`} onClick={() => setPreview((current) => !current)} type="button">
           {preview ? "隐藏预览" : "显示预览"}
