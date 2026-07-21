@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -35,9 +36,25 @@ public class PublicContentController {
     @GetMapping("/health") public ApiResponse<String> health() { return ApiResponse.ok("ok"); }
 
     @GetMapping("/posts")
-    public ApiResponse<PageResponse<ContentDtos.PostSummary>> postList(@RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="12") int size) {
+    public ApiResponse<PageResponse<ContentDtos.PostSummary>> postList(
+            @RequestParam(defaultValue="1") int page,
+            @RequestParam(defaultValue="12") int size,
+            @RequestParam(required=false) String tag) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), Math.min(Math.max(size, 1), 50), Sort.by(Sort.Direction.DESC, "publishedAt"));
-        return ApiResponse.ok(PageResponse.from(posts.findAllByStatus(PUBLISHED, pageable).map(ContentMapper::postSummary)));
+        String normalizedTag = tag == null ? null : tag.trim();
+        var result = normalizedTag == null || normalizedTag.isBlank()
+                ? posts.findAllByStatus(PUBLISHED, pageable)
+                : posts.findAllByStatusAndTag(PUBLISHED, normalizedTag, pageable);
+        return ApiResponse.ok(PageResponse.from(result.map(ContentMapper::postSummary)));
+    }
+
+    @GetMapping("/tags")
+    public ApiResponse<List<String>> tags() {
+        LinkedHashSet<String> tags = new LinkedHashSet<>();
+        posts.findTagsCsvByStatusAndTagsCsvIsNotNull(PUBLISHED).forEach(csv -> ContentDtos.split(csv).forEach(tag -> {
+            if (tags.size() < 10) tags.add(tag);
+        }));
+        return ApiResponse.ok(tags.stream().toList());
     }
 
     @GetMapping("/posts/{slug}")

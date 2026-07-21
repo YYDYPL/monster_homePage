@@ -24,7 +24,7 @@ public class Note {
     @Column(nullable = false, unique = true, length = 180)
     private String slug;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String summary;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -33,7 +33,7 @@ public class Note {
     @Column(length = 80)
     private String category;
 
-    @Column(name = "tags_csv", length = 1000)
+    @Column(name = "tags_csv", columnDefinition = "TEXT")
     private String tagsCsv;
 
     @Enumerated(EnumType.STRING)

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { MarkdownEditor } from "@/components/markdown-editor";
@@ -81,7 +81,7 @@ function toForm(item: EditableItem, mode: Mode): FormState {
   };
 }
 
-const split = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
+const split = (value: string) => Array.from(new Set(value.split(",").map((item) => item.trim()).filter(Boolean)));
 
 export function ContentManager({ mode }: { mode: Mode }) {
   const [items, setItems] = useState<EditableItem[]>([]);
@@ -132,6 +132,13 @@ export function ContentManager({ mode }: { mode: Mode }) {
     setSaving(true);
     setMessage("");
 
+    const tags = mode === "projects" ? [] : split(form.tags);
+    if (tags.length > 10) {
+      setMessage("\u6587\u7ae0\u6216\u7b14\u8bb0\u6700\u591a\u652f\u6301 10 \u4e2a\u6807\u7b7e");
+      setSaving(false);
+      return;
+    }
+
     let payload: Record<string, unknown>;
     if (mode === "posts") {
       payload = {
@@ -140,7 +147,7 @@ export function ContentManager({ mode }: { mode: Mode }) {
         summary: form.summary,
         content: form.content,
         coverImageUrl: form.coverImageUrl || null,
-        tags: split(form.tags),
+        tags,
         series: form.series || null,
         status: form.status,
         featured: form.featured,
@@ -152,7 +159,7 @@ export function ContentManager({ mode }: { mode: Mode }) {
         summary: form.summary,
         content: form.content,
         category: form.category || null,
-        tags: split(form.tags),
+        tags,
         status: form.status,
       };
     } else {
@@ -238,7 +245,7 @@ export function ContentManager({ mode }: { mode: Mode }) {
 
             <div className="form-field span-2">
               <label>摘要</label>
-              <textarea className="form-control" maxLength={500} value={form.summary} onChange={(event) => change("summary", event.target.value)} />
+              <textarea className="form-control" value={form.summary} onChange={(event) => change("summary", event.target.value)} />
             </div>
 
             {mode === "posts" && (

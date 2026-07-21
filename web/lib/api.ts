@@ -153,8 +153,9 @@ export async function apiFetch<T>(path: string, init?: NextRequestInit): Promise
   }
 }
 
-export const getPosts = (page = 1, size = 12) =>
-  apiFetch<PageResponse<PostSummary>>(`/api/posts?page=${page}&size=${size}`);
+export const getPosts = (page = 1, size = 12, tag?: string) =>
+  apiFetch<PageResponse<PostSummary>>(`/api/posts?page=${page}&size=${size}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`);
+export const getTags = () => apiFetch<string[]>("/api/tags");
 export const getPost = (slug: string) =>
   apiFetch<PostDetail>(`/api/posts/${encodeURIComponent(slug)}`);
 export const getNotes = (page = 1, size = 20) =>

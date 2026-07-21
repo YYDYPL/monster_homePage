@@ -116,11 +116,11 @@ public class AdminContentController {
         String title = ContentNormalizer.required(request.title(), "title");
         String requestedSlug = ContentNormalizer.optional(request.slug());
         post.setTitle(title);
-        post.setSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? title : requestedSlug));
+        post.setSlug(uniquePostSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? title : requestedSlug), post.getId()));
         post.setSummary(ContentNormalizer.optional(request.summary()));
         post.setContent(ContentNormalizer.required(request.content(), "content"));
         post.setCoverImageUrl(ContentNormalizer.optional(request.coverImageUrl()));
-        post.setTagsCsv(ContentDtos.join(ContentNormalizer.list(request.tags())));
+        post.setTagsCsv(ContentDtos.join(normalizeTags(request.tags())));
         post.setSeries(ContentNormalizer.optional(request.series()));
         post.setFeatured(request.featured());
         post.setStatus(request.status() == null ? DRAFT : request.status());
@@ -131,13 +131,37 @@ public class AdminContentController {
         String title = ContentNormalizer.required(request.title(), "title");
         String requestedSlug = ContentNormalizer.optional(request.slug());
         note.setTitle(title);
-        note.setSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? title : requestedSlug));
+        note.setSlug(uniqueNoteSlug(SlugUtil.slugify(requestedSlug == null || requestedSlug.isBlank() ? title : requestedSlug), note.getId()));
         note.setSummary(ContentNormalizer.optional(request.summary()));
         note.setContent(ContentNormalizer.required(request.content(), "content"));
         note.setCategory(ContentNormalizer.optional(request.category()));
-        note.setTagsCsv(ContentDtos.join(ContentNormalizer.list(request.tags())));
+        note.setTagsCsv(ContentDtos.join(normalizeTags(request.tags())));
         note.setStatus(request.status() == null ? DRAFT : request.status());
         if (note.getStatus() == PUBLISHED && note.getPublishedAt() == null) note.setPublishedAt(Instant.now());
+    }
+
+    private java.util.List<String> normalizeTags(java.util.List<String> values) {
+        java.util.List<String> tags = ContentNormalizer.list(values);
+        if (tags.size() > 10) throw new IllegalArgumentException("\u6587\u7ae0\u6216\u7b14\u8bb0\u6700\u591a\u652f\u6301 10 \u4e2a\u6807\u7b7e");
+        return tags;
+    }
+
+    private String uniquePostSlug(String base, UUID currentId) {
+        return uniqueSlug(base, currentId, posts::existsBySlug, posts::existsBySlugAndIdNot);
+    }
+
+    private String uniqueNoteSlug(String base, UUID currentId) {
+        return uniqueSlug(base, currentId, notes::existsBySlug, notes::existsBySlugAndIdNot);
+    }
+
+    private String uniqueSlug(String base, UUID currentId, java.util.function.Predicate<String> exists, java.util.function.BiPredicate<String, UUID> existsForOtherId) {
+        String candidate = base;
+        if (currentId != null ? !existsForOtherId.test(candidate, currentId) : !exists.test(candidate)) return candidate;
+        int suffix = 2;
+        while (true) {
+            candidate = base + "-" + suffix++;
+            if (currentId != null ? !existsForOtherId.test(candidate, currentId) : !exists.test(candidate)) return candidate;
+        }
     }
 
     private void apply(Project project, ContentDtos.ProjectRequest request) {

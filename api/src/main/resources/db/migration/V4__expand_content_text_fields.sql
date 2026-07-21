@@ -1,0 +1,7 @@
+ALTER TABLE posts
+    ALTER COLUMN summary TYPE TEXT,
+    ALTER COLUMN tags_csv TYPE TEXT;
+
+ALTER TABLE notes
+    ALTER COLUMN summary TYPE TEXT,
+    ALTER COLUMN tags_csv TYPE TEXT;

@@ -21,8 +21,8 @@ spring:
     baseline-on-migrate: true
   servlet:
     multipart:
-      max-file-size: ${MAX_FILE_SIZE:5MB}
-      max-request-size: ${MAX_REQUEST_SIZE:10MB}
+      max-file-size: ${MAX_FILE_SIZE:20MB}
+      max-request-size: ${MAX_REQUEST_SIZE:50MB}
   session:
     timeout: ${SESSION_TIMEOUT:8h}
 server:
@@ -51,6 +51,7 @@ app:
     password: ${ADMIN_PASSWORD:ChangeMe123!}
   storage:
     path: ${APP_STORAGE_PATH:./uploads}
+    max-file-size: ${MAX_FILE_SIZE:20MB}
   analytics:
     salt: ${ANALYTICS_SALT:change-me-in-production}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -18,7 +19,6 @@ import java.util.UUID;
 
 @Service
 public class MediaStorageService {
-    private static final long MAX_SIZE = 5L * 1024 * 1024;
     private static final Map<String, String> EXTENSIONS = Map.of(
             "image/jpeg", ".jpg",
             "image/png", ".png",
@@ -27,6 +27,7 @@ public class MediaStorageService {
     );
 
     private final Path root;
+    private final long maxSizeBytes;
     private final MediaAssetRepository repository;
     private final PostRepository posts;
     private final ProjectRepository projects;
@@ -34,11 +35,13 @@ public class MediaStorageService {
     public MediaStorageService(@Value("${app.storage.path:./uploads}") String storagePath,
                                MediaAssetRepository repository,
                                PostRepository posts,
-                               ProjectRepository projects) {
+                               ProjectRepository projects,
+                               @Value("${app.storage.max-file-size:20MB}") DataSize maxSize) {
         this.root = Path.of(storagePath).toAbsolutePath().normalize();
         this.repository = repository;
         this.posts = posts;
         this.projects = projects;
+        this.maxSizeBytes = maxSize.toBytes();
         try {
             Files.createDirectories(root);
         } catch (IOException exception) {
@@ -48,9 +51,12 @@ public class MediaStorageService {
 
     public MediaAsset store(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("请选择要上传的图片");
-        if (file.getSize() > MAX_SIZE) throw new IllegalArgumentException("图片大小不能超过 5MB");
+        if (file.getSize() > maxSizeBytes) throw new IllegalArgumentException("图片大小不能超过 " + DataSize.ofBytes(maxSizeBytes).toMegabytes() + "MB");
         try {
             byte[] bytes = file.getBytes();
+            if (bytes.length > maxSizeBytes) {
+                throw new IllegalArgumentException("\u56fe\u7247\u5927\u5c0f\u4e0d\u80fd\u8d85\u8fc7 " + DataSize.ofBytes(maxSizeBytes).toMegabytes() + "MB");
+            }
             String contentType = detectContentType(bytes);
             String extension = EXTENSIONS.get(contentType);
             if (extension == null) throw new IllegalArgumentException("仅支持 JPEG、PNG、GIF 和 WebP 图片");
@@ -60,7 +66,9 @@ public class MediaStorageService {
 
             MediaAsset asset = new MediaAsset();
             String originalName = file.getOriginalFilename();
-            asset.setOriginalName(originalName == null || originalName.isBlank() ? storedName : Path.of(originalName).getFileName().toString());
+            String safeOriginalName = originalName == null ? "" : originalName.replace("\\", "/");
+            int separator = safeOriginalName.lastIndexOf('/');
+            asset.setOriginalName(safeOriginalName.isBlank() ? storedName : safeOriginalName.substring(separator + 1));
             asset.setStoredName(storedName);
             asset.setContentType(contentType);
             asset.setSizeBytes(bytes.length);

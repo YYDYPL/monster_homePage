@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface NoteRepository extends JpaRepository<Note, UUID> {
     Optional<Note> findBySlugAndStatus(String slug, ContentStatus status);
     Page<Note> findAllByStatus(ContentStatus status, Pageable pageable);
+    boolean existsBySlug(String slug);
+    boolean existsBySlugAndIdNot(String slug, UUID id);
     List<Note> findAllByStatusOrderBySortOrderAscTitleAsc(ContentStatus status);
     List<Note> findAllByOrderBySortOrderAscTitleAsc();
     List<Note> findAllByParentIdOrderBySortOrderAscTitleAsc(UUID parentId);

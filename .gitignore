@@ -28,6 +28,7 @@ Thumbs.db
 uploads/
 backups/
 *.sql
+!api/src/main/resources/db/migration/**/*.sql
 *.dump
 # Deployment artifacts
 deploy.tar.gz

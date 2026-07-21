@@ -29,8 +29,10 @@ services:
       DB_USER: ${DB_USER:-monster}
       DB_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
-      APP_ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD:?请在 .env 中设置 ADMIN_PASSWORD}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-20MB}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-50MB}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?请在 .env 中设置 ADMIN_PASSWORD}
       APP_SEED_DATA: ${APP_SEED_DATA:-true}
       APP_STORAGE_PATH: /app/uploads
       ANALYTICS_SALT: ${ANALYTICS_SALT:?请在 .env 中设置 ANALYTICS_SALT}
@@ -80,6 +82,7 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-localhost}
       CADDY_SCHEME: ${CADDY_SCHEME:-}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-50MB}
     ports:
       - "80:80"
       - "443:443"

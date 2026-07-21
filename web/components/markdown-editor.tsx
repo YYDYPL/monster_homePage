@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState, type ClipboardEvent, type ChangeEvent, type ReactNode } from "react";
 import { Markdown } from "@/components/markdown";
@@ -55,6 +55,7 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const markdownFileRef = useRef<HTMLInputElement>(null);
   const [format, setFormat] = useState<BlockFormat>("paragraph");
   const [preview, setPreview] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -122,6 +123,39 @@ export function MarkdownEditor({
     const nextStart = current.start + opening.length;
     updateValue(nextValue, nextStart, nextStart + selected.length);
     setFormat("paragraph");
+  }
+
+  async function importMarkdownFile(file: File) {
+    const maxMarkdownBytes = 10 * 1024 * 1024;
+    if (file.size > maxMarkdownBytes) {
+      window.alert("Markdown \u6587\u4ef6\u4e0d\u80fd\u8d85\u8fc7 10MB");
+      if (markdownFileRef.current) markdownFileRef.current.value = "";
+      return;
+    }
+    if (!/\.(md|markdown)$/i.test(file.name)) {
+      window.alert("\u8bf7\u9009\u62e9 .md \u6216 .markdown \u6587\u4ef6");
+      if (markdownFileRef.current) markdownFileRef.current.value = "";
+      return;
+    }
+    try {
+      const text = await file.text();
+      const current = selection();
+      if (!current) return;
+      const before = value.slice(0, current.start);
+      const after = value.slice(current.end);
+      const prefix = before && !before.endsWith("\n") ? "\n\n" : "";
+      const suffix = after && !after.startsWith("\n") ? "\n\n" : "";
+      updateValue(before + prefix + text.replace(/\r\n?/g, "\n") + suffix + after, current.start + prefix.length + text.length);
+    } catch {
+      window.alert("\u004d\u0061\u0072\u006b\u0064\u006f\u0077\u006e \u6587\u4ef6\u8bfb\u53d6\u5931\u8d25");
+    } finally {
+      if (markdownFileRef.current) markdownFileRef.current.value = "";
+    }
+  }
+
+  function onMarkdownFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void importMarkdownFile(file);
   }
 
   async function uploadImage(file: File) {
@@ -222,6 +256,8 @@ export function MarkdownEditor({
             value={highlightColor}
           />
         </label>
+        <ToolbarButton label={"\u5bfc\u5165 Markdown"} title={"\u5bfc\u5165 Markdown \u6587\u4ef6"} onClick={() => markdownFileRef.current?.click()}>MD</ToolbarButton>
+        <input ref={markdownFileRef} accept=".md,.markdown,text/markdown,text/plain" hidden onChange={onMarkdownFileChange} type="file" />
         <ToolbarButton disabled={uploading} label={"\u56fe\u7247"} title={"\u4e0a\u4f20\u56fe\u7247"} onClick={() => fileRef.current?.click()}>{uploading ? "\u2026" : "\u25a7"}</ToolbarButton>
         <input ref={fileRef} accept="image/*" hidden onChange={onFileChange} type="file" />
         <button className={`markdown-preview-toggle ${preview ? "active" : ""}`} onClick={() => setPreview((current) => !current)} type="button">

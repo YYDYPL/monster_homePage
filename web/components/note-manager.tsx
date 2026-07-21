@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   type DragEvent,
@@ -72,7 +72,7 @@ function toForm(item: EditableItem): NoteForm {
 }
 
 function splitTags(value: string) {
-  return value.split(",").map((tag) => tag.trim()).filter(Boolean);
+  return Array.from(new Set(value.split(",").map((tag) => tag.trim()).filter(Boolean)));
 }
 
 function findNode(tree: AdminNoteTreeNode[], id: string): AdminNoteTreeNode | undefined {
@@ -196,13 +196,19 @@ export function NoteManager() {
     event.preventDefault();
     setSaving(true);
     setNotice(null);
+    const tags = splitTags(form.tags);
+    if (tags.length > 10) {
+      setNotice({ type: "error", text: "\u6587\u7ae0\u6216\u7b14\u8bb0\u6700\u591a\u652f\u6301 10 \u4e2a\u6807\u7b7e" });
+      setSaving(false);
+      return;
+    }
     const payload = {
       title: form.title,
       slug: form.slug || null,
       summary: form.summary,
       content: form.content,
       category: form.category || null,
-      tags: splitTags(form.tags),
+      tags,
       status: form.status,
       parentId: form.parentId,
       sortOrder: Math.max(0, form.sortOrder),

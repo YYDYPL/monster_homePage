@@ -10,7 +10,7 @@
 	@api path /api/* /uploads/*
 	handle @api {
 		request_body {
-			max_size 10MB
+			max_size {$MAX_REQUEST_SIZE:50MB}
 		}
 		reverse_proxy api:8080
 	}

@@ -9,11 +9,11 @@ public class Post {
     @Id private UUID id;
     @Column(nullable=false, length=180) private String title;
     @Column(nullable=false, unique=true, length=180) private String slug;
-    @Column(length=500) private String summary;
+    @Column(columnDefinition="TEXT") private String summary;
     @Column(nullable=false, columnDefinition="TEXT") private String content;
     @Enumerated(EnumType.STRING) @Column(nullable=false, length=20) private ContentStatus status = ContentStatus.DRAFT;
     @Column(name="cover_image_url", length=500) private String coverImageUrl;
-    @Column(name="tags_csv", length=1000) private String tagsCsv;
+    @Column(name="tags_csv", columnDefinition="TEXT") private String tagsCsv;
     @Column(length=120) private String series;
     @Column(nullable=false) private boolean featured;
     @Column(name="published_at") private Instant publishedAt;
