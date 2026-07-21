@@ -66,6 +66,6 @@ public class PublicOperationsController {
     @PostMapping("/analytics/page-view")
     public ApiResponse<Boolean> pageView(@Valid @RequestBody OperationsDtos.PageViewRequest request,
                                          HttpServletRequest servletRequest) {
-        return ApiResponse.ok(pageViews.record(request.path(), servletRequest));
+        return ApiResponse.ok(pageViews.record(request, servletRequest));
     }
 }

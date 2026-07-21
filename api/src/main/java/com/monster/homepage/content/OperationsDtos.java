@@ -67,13 +67,30 @@ public final class OperationsDtos {
     public record ExportAuthorizationResult(boolean authorized) {}
 
     public record PageViewRequest(
-            @NotBlank @Size(max = 500) @Pattern(regexp = "^/.*", message = "path must start with /") String path
+            @NotBlank @Size(max = 500) @Pattern(regexp = "^/.*", message = "path must start with /") String path,
+            @Size(max = 120) String visitorId,
+            @Size(max = 40) String networkType,
+            @Size(max = 80) String locale,
+            @Size(max = 80) String timezone
     ) {}
 
-    public record DailyMetric(String day, long views) {}
+    public record AnalyticsMetric(long pv, long uv, long uip) {}
+    public record AnalyticsPoint(String period, long pv, long uv, long uip) {}
     public record PathMetric(String path, long views) {}
-    public record AnalyticsSummary(long totalViews, long todayViews, long last7Days, long last30Days,
-                                   long uniqueVisitors30Days, List<DailyMetric> daily, List<PathMetric> topPaths) {}
+    public record AnalyticsDimension(String name, long pv, long uv, long uip) {}
+    public record AnalyticsSummary(
+            String startDate,
+            String endDate,
+            int days,
+            AnalyticsMetric totals,
+            AnalyticsMetric today,
+            List<AnalyticsPoint> timeline,
+            List<PathMetric> topPaths,
+            List<AnalyticsDimension> regions,
+            List<AnalyticsDimension> browsers,
+            List<AnalyticsDimension> devices,
+            List<AnalyticsDimension> networks
+    ) {}
 
     public record UserItem(UUID id, String username, String role, boolean enabled, Instant createdAt) {}
     public record UserRequest(

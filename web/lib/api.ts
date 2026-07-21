@@ -1,4 +1,6 @@
-﻿export type ApiResponse<T> = {
+import { cache } from "react";
+
+export type ApiResponse<T> = {
   success: boolean;
   data: T;
   error?: { code: string; message: string; fields?: Record<string, string> } | null;
@@ -160,9 +162,9 @@ export const getPost = (slug: string) =>
   apiFetch<PostDetail>(`/api/posts/${encodeURIComponent(slug)}`);
 export const getNotes = (page = 1, size = 20) =>
   apiFetch<PageResponse<NoteSummary>>(`/api/notes?page=${page}&size=${size}`);
-export const getNote = (slug: string) =>
-  apiFetch<NoteDetail>(`/api/notes/${encodeURIComponent(slug)}`);
-export const getNoteTree = () => apiFetch<NoteTreeNode[]>("/api/notes/tree");
+export const getNote = cache((slug: string) =>
+  apiFetch<NoteDetail>(`/api/notes/${encodeURIComponent(slug)}`));
+export const getNoteTree = cache(() => apiFetch<NoteTreeNode[]>("/api/notes/tree"));
 export const getProjects = (page = 1, size = 20) =>
   apiFetch<PageResponse<ProjectSummary>>(`/api/projects?page=${page}&size=${size}`);
 export const getProject = (slug: string) =>

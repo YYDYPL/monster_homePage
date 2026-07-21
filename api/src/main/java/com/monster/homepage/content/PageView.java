@@ -23,6 +23,21 @@ public class PageView {
     @Column(name = "visitor_hash", length = 128)
     private String visitorHash;
 
+    @Column(name = "ip_hash", length = 128)
+    private String ipHash;
+
+    @Column(length = 80)
+    private String browser;
+
+    @Column(length = 80)
+    private String device;
+
+    @Column(length = 40)
+    private String network;
+
+    @Column(length = 120)
+    private String region;
+
     @Column(name = "viewed_at", nullable = false)
     private Instant viewedAt;
 
@@ -31,4 +46,9 @@ public class PageView {
 
     public void setPath(String path) { this.path = path; }
     public void setVisitorHash(String visitorHash) { this.visitorHash = visitorHash; }
+    public void setIpHash(String ipHash) { this.ipHash = ipHash; }
+    public void setBrowser(String browser) { this.browser = browser; }
+    public void setDevice(String device) { this.device = device; }
+    public void setNetwork(String network) { this.network = network; }
+    public void setRegion(String region) { this.region = region; }
 }

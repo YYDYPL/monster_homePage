@@ -55,7 +55,7 @@ export default async function NotePage({ params }: { params: Promise<{ slug: str
             {trail.map((item, index) => (
               <span key={item.id}>
                 <i>/</i>
-                {index === trail.length - 1 ? item.title : <Link href={`/notes/${item.slug}`}>{item.title}</Link>}
+                {index === trail.length - 1 ? item.title : <Link href={`/notes/${item.slug}`} prefetch={false}>{item.title}</Link>}
               </span>
             ))}
           </nav>
@@ -81,13 +81,13 @@ export default async function NotePage({ params }: { params: Promise<{ slug: str
 
           <nav className="note-sibling-nav" aria-label="相邻笔记">
             {previous ? (
-              <Link href={`/notes/${previous.slug}`}>
+              <Link href={`/notes/${previous.slug}`} prefetch={false}>
                 <span>上一篇</span>
                 <strong>← {previous.title}</strong>
               </Link>
             ) : <span />}
             {next && (
-              <Link href={`/notes/${next.slug}`}>
+              <Link href={`/notes/${next.slug}`} prefetch={false}>
                 <span>下一篇</span>
                 <strong>{next.title} →</strong>
               </Link>

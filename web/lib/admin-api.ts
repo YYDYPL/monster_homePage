@@ -73,14 +73,21 @@ export type SiteSettingsUpdate = {
   exportKey?: string | null;
 };
 
+export type AnalyticsMetric = { pv: number; uv: number; uip: number };
+export type AnalyticsPoint = { period: string; pv: number; uv: number; uip: number };
+export type AnalyticsDimension = { name: string; pv: number; uv: number; uip: number };
 export type AnalyticsData = {
-  totalViews: number;
-  todayViews: number;
-  last7Days: number;
-  last30Days: number;
-  uniqueVisitors30Days: number;
-  daily: { day: string; views: number }[];
+  startDate: string;
+  endDate: string;
+  days: number;
+  totals: AnalyticsMetric;
+  today: AnalyticsMetric;
+  timeline: AnalyticsPoint[];
   topPaths: { path: string; views: number }[];
+  regions: AnalyticsDimension[];
+  browsers: AnalyticsDimension[];
+  devices: AnalyticsDimension[];
+  networks: AnalyticsDimension[];
 };
 export type TaxonomyKind = "tags" | "series" | "categories" | "technologies";
 export type TaxonomyItem = { name: string; usageCount: number };

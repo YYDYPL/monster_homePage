@@ -19,8 +19,8 @@ import static com.monster.homepage.content.ContentStatus.PUBLISHED;
 
 @Service
 public class NoteHierarchyService {
-    private static final Comparator<Note> NOTE_ORDER = Comparator.comparingInt(Note::getSortOrder)
-            .thenComparing(Note::getTitle, String.CASE_INSENSITIVE_ORDER);
+    private static final Comparator<NoteRepository.NoteTreeProjection> NOTE_ORDER = Comparator.comparingInt(NoteRepository.NoteTreeProjection::getSortOrder)
+            .thenComparing(NoteRepository.NoteTreeProjection::getTitle, String.CASE_INSENSITIVE_ORDER);
 
     private final NoteRepository notes;
 
@@ -30,12 +30,12 @@ public class NoteHierarchyService {
 
     @Transactional(readOnly = true)
     public List<ContentDtos.NoteTreeNode> publicTree() {
-        return buildTree(notes.findAllByStatusOrderBySortOrderAscTitleAsc(PUBLISHED));
+        return buildTree(notes.findTreeItemsByStatus(PUBLISHED));
     }
 
     @Transactional(readOnly = true)
     public List<ContentDtos.NoteTreeNode> adminTree() {
-        return buildTree(notes.findAllByOrderBySortOrderAscTitleAsc());
+        return buildTree(notes.findAllTreeItems());
     }
 
     @Transactional
@@ -129,13 +129,13 @@ public class NoteHierarchyService {
         for (int index = 0; index < siblings.size(); index++) siblings.get(index).setSortOrder(index);
     }
 
-    private List<ContentDtos.NoteTreeNode> buildTree(List<Note> source) {
-        Map<UUID, Note> byId = new LinkedHashMap<>();
+    private List<ContentDtos.NoteTreeNode> buildTree(List<? extends NoteRepository.NoteTreeProjection> source) {
+        Map<UUID, NoteRepository.NoteTreeProjection> byId = new LinkedHashMap<>();
         source.stream().sorted(NOTE_ORDER).forEach(note -> byId.put(note.getId(), note));
 
-        Map<UUID, List<Note>> children = new HashMap<>();
-        List<Note> roots = new ArrayList<>();
-        for (Note note : byId.values()) {
+        Map<UUID, List<NoteRepository.NoteTreeProjection>> children = new HashMap<>();
+        List<NoteRepository.NoteTreeProjection> roots = new ArrayList<>();
+        for (NoteRepository.NoteTreeProjection note : byId.values()) {
             UUID parentId = note.getParentId();
             if (parentId == null || !byId.containsKey(parentId)) roots.add(note);
             else children.computeIfAbsent(parentId, ignored -> new ArrayList<>()).add(note);
@@ -146,7 +146,7 @@ public class NoteHierarchyService {
         return roots.stream().map(note -> buildNode(note, children, new HashSet<>())).toList();
     }
 
-    private ContentDtos.NoteTreeNode buildNode(Note note, Map<UUID, List<Note>> children, Set<UUID> ancestors) {
+    private ContentDtos.NoteTreeNode buildNode(NoteRepository.NoteTreeProjection note, Map<UUID, List<NoteRepository.NoteTreeProjection>> children, Set<UUID> ancestors) {
         if (!ancestors.add(note.getId())) {
             return treeNode(note, List.of());
         }
@@ -157,7 +157,7 @@ public class NoteHierarchyService {
         return treeNode(note, nested);
     }
 
-    private ContentDtos.NoteTreeNode treeNode(Note note, List<ContentDtos.NoteTreeNode> children) {
+    private ContentDtos.NoteTreeNode treeNode(NoteRepository.NoteTreeProjection note, List<ContentDtos.NoteTreeNode> children) {
         return new ContentDtos.NoteTreeNode(note.getId(), note.getTitle(), note.getSlug(), note.getSummary(), note.getCategory(), note.getStatus(), note.getParentId(), note.getSortOrder(), note.getUpdatedAt(), children);
     }
 }

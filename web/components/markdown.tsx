@@ -1,4 +1,6 @@
-﻿import { isValidElement, type ReactNode } from "react";
+"use client";
+
+import { isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";

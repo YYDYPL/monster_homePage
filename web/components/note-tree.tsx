@@ -48,6 +48,7 @@ function PublicTreeNode({
       aria-current={active ? "page" : undefined}
       className={`knowledge-tree-link${active ? " active" : ""}`}
       href={`/notes/${node.slug}`}
+      prefetch={false}
     >
       <span className="knowledge-tree-node-icon" aria-hidden="true">
         {hasChildren ? "▱" : "·"}
@@ -99,11 +100,11 @@ function KnowledgeIndexNode({ node, index }: { node: NoteTreeNode; index: number
         <div>
           <p>{node.category || "Knowledge"}</p>
           <h2>
-            <Link href={`/notes/${node.slug}`}>{node.title}</Link>
+            <Link href={`/notes/${node.slug}`} prefetch={false}>{node.title}</Link>
           </h2>
           {node.summary && <div className="knowledge-index-summary">{node.summary}</div>}
         </div>
-        <Link className="knowledge-index-open" href={`/notes/${node.slug}`} aria-label={`打开 ${node.title}`}>
+        <Link className="knowledge-index-open" href={`/notes/${node.slug}`} prefetch={false} aria-label={`打开 ${node.title}`}>
           ↗
         </Link>
       </div>
@@ -128,7 +129,7 @@ function KnowledgeIndexChild({ node, index }: { node: NoteTreeNode; index: strin
       <div className="knowledge-index-child-row">
         <span>{index}</span>
         <div>
-          <Link href={`/notes/${node.slug}`}>{node.title}</Link>
+          <Link href={`/notes/${node.slug}`} prefetch={false}>{node.title}</Link>
           {node.summary && <p>{node.summary}</p>}
         </div>
         <span className="knowledge-index-child-meta">{node.category || "笔记"}</span>
