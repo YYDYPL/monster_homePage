@@ -42,7 +42,7 @@ export default async function NotesPage() {
               </div>
               <span>{flat.length} docs</span>
             </div>
-            <NoteTree expandAll tree={tree} />
+            <NoteTree tree={tree} />
           </aside>
 
           <div className="knowledge-catalog">

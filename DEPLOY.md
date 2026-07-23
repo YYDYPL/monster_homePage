@@ -28,6 +28,8 @@
 | `web` | Next.js 前端 | 容器内 3000 |
 | `caddy` | HTTPS、反向代理 | 宿主机 80/443，`caddy_data` 保存证书 |
 
+Web 的 3000 和 API 的 8080 只在 Docker 内部网络暴露，不应映射到生产服务器公网。Caddy 的宿主机端口可通过 `HTTP_PORT`、`HTTPS_PORT` 和 `HTTPS_UDP_PORT` 调整；生产默认使用 80/443。
+
 启动依赖顺序由 Compose 健康检查保证：
 
 ```text
@@ -123,6 +125,9 @@ nano .env
 ```dotenv
 DOMAIN=www.hjs123.xin
 CADDY_SCHEME=
+HTTP_PORT=80
+HTTPS_PORT=443
+HTTPS_UDP_PORT=443
 DB_NAME=monster_homepage
 DB_USER=monster
 DB_PASSWORD=<强随机数据库密码>
@@ -188,6 +193,18 @@ api       Up (healthy)
 web       Up (healthy)
 caddy     Up
 ```
+
+### 3.4 配置 AI 内容辅助
+
+服务启动后，登录 `/admin/settings`，在“AI 接入”区域配置：
+
+- Base URL：OpenAI 兼容 API 根路径或完整的 `/chat/completions` 地址；
+- Model：供应商提供的模型标识；
+- API Key：调用该模型所需的密钥。
+
+保存前可以使用“测试连接”。后台不会回显已保存的 API Key，但当前实现会把 Key 明文存入 `site_settings`，因此数据库备份同样包含该 Key。生产环境必须限制数据库、备份目录和备份传输目标的访问权限；发生泄露时应立即在供应商侧撤销并重新生成 Key。
+
+AI 调用仅开放给已登录管理员。生成结果只写入浏览器中的编辑表单，仍需点击保存才会进入文章、笔记或项目数据。
 
 ---
 

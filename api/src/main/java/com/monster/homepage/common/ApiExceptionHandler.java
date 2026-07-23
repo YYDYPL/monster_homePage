@@ -1,5 +1,6 @@
 package com.monster.homepage.common;
 
+import com.monster.homepage.ai.AiServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,6 +22,15 @@ import java.util.UUID;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(AiServiceException.class)
+    public ResponseEntity<ApiResponse<Void>> aiFailure(AiServiceException exception) {
+        return ResponseEntity.status(exception.getStatus()).body(ApiResponse.error(
+                exception.getCode(),
+                exception.getMessage(),
+                UUID.randomUUID().toString()
+        ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> validation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         Map<String, String> fields = new LinkedHashMap<>();

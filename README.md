@@ -138,6 +138,41 @@ npm run dev
 
 默认网站地址：`http://localhost:3000`。开发模式会把 `/api/*` 代理到 `http://localhost:8080`。
 
+### 4. 使用 Docker Desktop 在 8088 端口运行
+
+如果宿主机的 3000 端口已被其他项目占用，可以通过 Caddy 从 8088 访问完整容器栈。Web 容器内部仍监听 3000，但该端口不会发布到宿主机。
+
+在本机 `.env` 中设置：
+
+```dotenv
+DOMAIN=localhost
+CADDY_SCHEME=http://
+SESSION_COOKIE_SECURE=false
+HTTP_PORT=8088
+HTTPS_PORT=8443
+HTTPS_UDP_PORT=8443
+```
+
+然后启动：
+
+```bash
+docker compose up -d --build --wait
+```
+
+访问 `http://localhost:8088`，健康接口为 `http://localhost:8088/api/health`。
+
+### 5. 配置 AI 内容辅助
+
+登录后台后进入“网站设置”的“AI 接入”区域，填写 OpenAI 兼容接口的 Base URL、Model 和 API Key。Base URL 可以是 API 根路径，例如 `https://api.openai.com/v1`，也可以直接填写完整的 `/chat/completions` 地址。
+
+配置完成后可以：
+
+- 在文章、笔记和项目编辑器中根据正文生成摘要；
+- 在博客文章编辑器中根据提示词生成 Markdown 正文，预览后选择替换或追加；
+- 使用“测试连接”验证当前配置。
+
+当前实现按产品选择将 API Key 明文保存到 `site_settings`。后台不会回显 Key，但数据库和数据库备份会包含该值，必须限制其访问权限并定期轮换 Key。
+
 ## 测试与构建
 
 ```bash
@@ -171,9 +206,12 @@ export ANALYTICS_SALT=0123456789abcdef0123456789abcdef0123456789abcdef0123456789
 export DOMAIN=127.0.0.1
 export CADDY_SCHEME=http://
 export SESSION_COOKIE_SECURE=false
+export HTTP_PORT=8088
+export HTTPS_PORT=8443
+export HTTPS_UDP_PORT=8443
 
 docker compose up -d --build --wait --wait-timeout 240
-SMOKE_BASE_URL=http://127.0.0.1 python3 scripts/integration-smoke.py
+SMOKE_BASE_URL=http://127.0.0.1:8088 python3 scripts/integration-smoke.py
 docker compose ps
 ```
 
@@ -187,7 +225,10 @@ $env:ANALYTICS_SALT='0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
 $env:DOMAIN='127.0.0.1'
 $env:CADDY_SCHEME='http://'
 $env:SESSION_COOKIE_SECURE='false'
-$env:SMOKE_BASE_URL='http://127.0.0.1'
+$env:HTTP_PORT='8088'
+$env:HTTPS_PORT='8443'
+$env:HTTPS_UDP_PORT='8443'
+$env:SMOKE_BASE_URL='http://127.0.0.1:8088'
 
 docker compose up -d --build --wait --wait-timeout 240
 python scripts/integration-smoke.py

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { AiPostBodyDialog, AiSummaryButton } from "@/components/ai-actions";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { adminGet, adminMutation, type AdminPage, type EditableItem } from "@/lib/admin-api";
 
@@ -244,7 +245,19 @@ export function ContentManager({ mode }: { mode: Mode }) {
             <Field label="Slug（留空自动生成）" value={form.slug} onChange={(value) => change("slug", value)} />
 
             <div className="form-field span-2">
-              <label>摘要</label>
+              <div className="ai-field-label">
+                <label>摘要</label>
+                <AiSummaryButton
+                  content={mode === "projects" ? form.description : form.content}
+                  contentType={mode === "posts" ? "POST" : mode === "notes" ? "NOTE" : "PROJECT"}
+                  onError={(error) => setMessage(`AI 摘要生成失败：${error}`)}
+                  onGenerated={(summary) => {
+                    change("summary", summary);
+                    setMessage("AI 摘要已写入表单，保存内容后生效");
+                  }}
+                  title={mode === "projects" ? form.name : form.title}
+                />
+              </div>
               <textarea className="form-control" value={form.summary} onChange={(event) => change("summary", event.target.value)} />
             </div>
 
@@ -292,6 +305,22 @@ export function ContentManager({ mode }: { mode: Mode }) {
             )}
 
             <div className="form-field span-2">
+              {mode === "posts" && (
+                <div className="ai-editor-tools">
+                  <AiPostBodyDialog
+                    currentContent={form.content}
+                    onApply={(generated, applyMode) => {
+                      const next = applyMode === "append" && form.content.trim()
+                        ? `${form.content.trimEnd()}\n\n${generated}`
+                        : generated;
+                      change("content", next);
+                      setMessage(`AI 正文已${applyMode === "append" ? "追加" : "写入"}表单，保存文章后生效`);
+                    }}
+                    onError={(error) => setMessage(`AI 正文生成失败：${error}`)}
+                    title={form.title}
+                  />
+                </div>
+              )}
               <MarkdownEditor
                 id={`${mode}-content`}
                 label={mode === "projects" ? "项目介绍（Markdown）" : "正文（Markdown / HTML）"}

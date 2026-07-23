@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { AiSummaryButton } from "@/components/ai-actions";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import {
   adminGet,
@@ -412,7 +413,19 @@ export function NoteManager() {
             </div>
 
             <div className="form-field span-2">
-              <label htmlFor="note-summary">摘要</label>
+              <div className="ai-field-label">
+                <label htmlFor="note-summary">摘要</label>
+                <AiSummaryButton
+                  content={form.content}
+                  contentType="NOTE"
+                  onError={(error) => setNotice({ type: "error", text: `AI 摘要生成失败：${error}` })}
+                  onGenerated={(summary) => {
+                    change("summary", summary);
+                    setNotice({ type: "success", text: "AI 摘要已写入表单，保存笔记后生效" });
+                  }}
+                  title={form.title}
+                />
+              </div>
               <textarea
                 className="form-control note-summary-input"
                 id="note-summary"

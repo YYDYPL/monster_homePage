@@ -1,10 +1,14 @@
 ﻿"use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { KeyRound, LoaderCircle, PlugZap, RotateCcw, Trash2 } from "lucide-react";
 import {
   adminGet,
   adminMutation,
   adminUpload,
+  type AiSettings,
+  type AiSettingsUpdate,
+  type AiTextResult,
   type AdminSiteSettings,
   type MediaItem,
   type SiteConfig,
@@ -42,6 +46,8 @@ const empty: SiteConfig = {
   xiaohongshuUrl: "",
   douyinUrl: "",
 };
+
+const emptyAi: AiSettings = { baseUrl: "", model: "", apiKeyConfigured: false };
 
 type Field = { key: keyof SiteConfig; label: string; placeholder?: string; wide?: boolean; multiline?: boolean; type?: string };
 
@@ -90,14 +96,22 @@ export function SettingsForm() {
   const [message, setMessage] = useState("");
   const [exportKey, setExportKey] = useState("");
   const [exportKeyConfigured, setExportKeyConfigured] = useState(false);
+  const [ai, setAi] = useState<AiSettings>(emptyAi);
+  const [aiKey, setAiKey] = useState("");
+  const [clearAiKey, setClearAiKey] = useState(false);
+  const [testingAi, setTestingAi] = useState(false);
 
   useEffect(() => {
     let active = true;
-    adminGet<AdminSiteSettings>("/api/admin/settings")
-      .then((response) => {
+    Promise.all([
+      adminGet<AdminSiteSettings>("/api/admin/settings"),
+      adminGet<AiSettings>("/api/admin/ai/settings"),
+    ])
+      .then(([response, aiResponse]) => {
         if (!active) return;
         setForm({ ...empty, ...response.data.site });
         setExportKeyConfigured(response.data.exportKeyConfigured);
+        setAi(aiResponse.data);
       })
       .catch((reason) => { if (active) setMessage(reason instanceof Error ? reason.message : "设置加载失败"); })
       .finally(() => { if (active) setLoading(false); });
@@ -114,18 +128,57 @@ export function SettingsForm() {
     setMessage("");
     try {
       const payload: SiteSettingsUpdate = { site: form, exportKey: exportKey.trim() || null };
-      const response = await adminMutation<AdminSiteSettings>("/api/admin/settings", {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
+      const hasAiConfiguration = Boolean(ai.baseUrl.trim() || ai.model.trim() || aiKey.trim() || ai.apiKeyConfigured || clearAiKey);
+      if (hasAiConfiguration && (!ai.baseUrl.trim() || !ai.model.trim())) {
+        throw new Error("AI Base URL 和 Model 必须同时填写");
+      }
+      const siteRequest = adminMutation<AdminSiteSettings>("/api/admin/settings", {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+      const aiRequest = hasAiConfiguration
+        ? adminMutation<AiSettings>("/api/admin/ai/settings", {
+            method: "PATCH",
+            body: JSON.stringify({
+              baseUrl: ai.baseUrl,
+              model: ai.model,
+              apiKey: aiKey.trim() || null,
+              clearApiKey: clearAiKey,
+            } satisfies AiSettingsUpdate),
+          })
+        : null;
+      const [response, aiResponse] = await Promise.all([siteRequest, aiRequest]);
       setForm({ ...empty, ...response.data.site });
       setExportKeyConfigured(response.data.exportKeyConfigured);
       setExportKey("");
-      setMessage("网站设置已保存，公共页面和内容导出配置会读取新设置。");
+      if (aiResponse) setAi(aiResponse.data);
+      setAiKey("");
+      setClearAiKey(false);
+      setMessage("网站设置已保存，公共页面、内容导出和 AI 功能会读取新设置。");
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "保存失败");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function testAi() {
+    if (!ai.baseUrl.trim() || !ai.model.trim()) {
+      setMessage("请先填写 AI Base URL 和 Model");
+      return;
+    }
+    setTestingAi(true);
+    setMessage("");
+    try {
+      const response = await adminMutation<AiTextResult>("/api/admin/ai/test", {
+        method: "POST",
+        body: JSON.stringify({ baseUrl: ai.baseUrl, model: ai.model, apiKey: aiKey.trim() || null }),
+      });
+      setMessage(`AI 连接成功：${response.data.text}`);
+    } catch (reason) {
+      setMessage(`AI 连接失败：${reason instanceof Error ? reason.message : "请检查配置"}`);
+    } finally {
+      setTestingAi(false);
     }
   }
 
@@ -180,6 +233,74 @@ export function SettingsForm() {
                   <small className="field-help">
                     {exportKeyConfigured ? "输入新值并保存即可替换原密钥；留空不会修改。" : "配置并保存后，文章与知识笔记详情页才可完成导出授权。"}
                   </small>
+                </div>
+              </div>
+            </section>
+
+            <section className="admin-panel settings-section ai-settings-section">
+              <div className="panel-head">
+                <div>
+                  <h2>AI 接入</h2>
+                  <p>连接 OpenAI 兼容的 chat/completions 接口，用于生成摘要和博客正文。</p>
+                </div>
+                <span className={`export-key-status ${ai.apiKeyConfigured && !clearAiKey ? "configured" : ""}`}>
+                  {clearAiKey ? "待清除" : ai.apiKeyConfigured ? "Key 已配置" : "未配置"}
+                </span>
+              </div>
+              <div className="settings-section-body editor-grid">
+                <div className="form-field span-2">
+                  <label htmlFor="aiBaseUrl">Base URL</label>
+                  <input
+                    className="form-control"
+                    id="aiBaseUrl"
+                    placeholder="https://api.openai.com/v1"
+                    type="url"
+                    value={ai.baseUrl}
+                    onChange={(event) => setAi((current) => ({ ...current, baseUrl: event.target.value }))}
+                  />
+                  <small className="field-help">可填写 API 根路径或完整的 /chat/completions 地址。</small>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="aiModel">Model</label>
+                  <input
+                    className="form-control"
+                    id="aiModel"
+                    placeholder="gpt-4.1-mini"
+                    value={ai.model}
+                    onChange={(event) => setAi((current) => ({ ...current, model: event.target.value }))}
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="aiApiKey">{ai.apiKeyConfigured ? "设置新的 API Key" : "API Key"}</label>
+                  <div className="ai-key-input-wrap">
+                    <KeyRound aria-hidden="true" />
+                    <input
+                      autoComplete="new-password"
+                      className="form-control"
+                      disabled={clearAiKey}
+                      id="aiApiKey"
+                      maxLength={2048}
+                      placeholder={ai.apiKeyConfigured ? "留空保持现有 Key" : "sk-..."}
+                      type="password"
+                      value={aiKey}
+                      onChange={(event) => { setAiKey(event.target.value); setClearAiKey(false); }}
+                    />
+                  </div>
+                </div>
+                <div className="ai-settings-warning span-2">
+                  API Key 按当前配置明文保存在数据库中，也会进入数据库备份。请限制数据库和备份文件的访问权限。
+                </div>
+                <div className="ai-settings-actions span-2">
+                  {ai.apiKeyConfigured && (
+                    <button className="button small danger" onClick={() => { setClearAiKey((current) => !current); setAiKey(""); }} type="button">
+                      {clearAiKey ? <RotateCcw aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
+                      {clearAiKey ? "取消清除" : "保存时清除 Key"}
+                    </button>
+                  )}
+                  <button className="button small" disabled={testingAi || clearAiKey} onClick={() => void testAi()} type="button">
+                    {testingAi ? <LoaderCircle className="spin" aria-hidden="true" /> : <PlugZap aria-hidden="true" />}
+                    {testingAi ? "测试中" : "测试连接"}
+                  </button>
                 </div>
               </div>
             </section>

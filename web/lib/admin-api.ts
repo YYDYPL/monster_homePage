@@ -73,6 +73,11 @@ export type SiteSettingsUpdate = {
   exportKey?: string | null;
 };
 
+export type AiContentType = "POST" | "NOTE" | "PROJECT";
+export type AiSettings = { baseUrl: string; model: string; apiKeyConfigured: boolean };
+export type AiSettingsUpdate = { baseUrl: string; model: string; apiKey?: string | null; clearApiKey: boolean };
+export type AiTextResult = { text: string };
+
 export type AnalyticsMetric = { pv: number; uv: number; uip: number };
 export type AnalyticsPoint = { period: string; pv: number; uv: number; uip: number };
 export type AnalyticsDimension = { name: string; pv: number; uv: number; uip: number };

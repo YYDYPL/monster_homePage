@@ -1,4 +1,8 @@
-﻿import Link from "next/link";
+"use client";
+
+import Link from "next/link";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import type { NoteTreeNode } from "@/lib/api";
 import { containsNoteSlug } from "@/lib/note-tree";
 
@@ -16,14 +20,48 @@ export function NoteTree({
   if (!tree.length) return <p className="knowledge-tree-empty">目录中还没有已发布笔记。</p>;
 
   return (
+    <InteractiveNoteTree
+      activeSlug={activeSlug}
+      expandAll={expandAll}
+      key={activeSlug || "knowledge-root"}
+      label={label}
+      tree={tree}
+    />
+  );
+}
+
+function InteractiveNoteTree({
+  tree,
+  activeSlug,
+  expandAll,
+  label,
+}: {
+  tree: NoteTreeNode[];
+  activeSlug?: string;
+  expandAll: boolean;
+  label: string;
+}) {
+  const [expanded, setExpanded] = useState<Set<string>>(() => initialExpanded(tree, activeSlug, expandAll));
+
+  function toggle(id: string) {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  return (
     <nav className="knowledge-tree" aria-label={label}>
       <ul>
         {tree.map((node) => (
           <PublicTreeNode
             activeSlug={activeSlug}
-            expandAll={expandAll}
+            expanded={expanded}
             key={node.id}
             node={node}
+            onToggle={toggle}
           />
         ))}
       </ul>
@@ -34,50 +72,84 @@ export function NoteTree({
 function PublicTreeNode({
   node,
   activeSlug,
-  expandAll,
+  expanded,
+  onToggle,
 }: {
   node: NoteTreeNode;
   activeSlug?: string;
-  expandAll: boolean;
+  expanded: Set<string>;
+  onToggle: (id: string) => void;
 }) {
   const active = node.slug === activeSlug;
   const hasChildren = node.children.length > 0;
-  const shouldOpen = expandAll || active || containsNoteSlug(node, activeSlug);
-  const link = (
-    <Link
-      aria-current={active ? "page" : undefined}
-      className={`knowledge-tree-link${active ? " active" : ""}`}
-      href={`/notes/${node.slug}`}
-      prefetch={false}
-    >
-      <span className="knowledge-tree-node-icon" aria-hidden="true">
-        {hasChildren ? "▱" : "·"}
-      </span>
-      <span>{node.title}</span>
-    </Link>
-  );
+  const isOpen = expanded.has(node.id);
+  const childListId = `knowledge-tree-children-${node.id}`;
 
   return (
     <li className="knowledge-tree-item">
-      {hasChildren ? (
-        <details open={shouldOpen}>
-          <summary>{link}</summary>
-          <ul>
-            {node.children.map((child) => (
-              <PublicTreeNode
-                activeSlug={activeSlug}
-                expandAll={expandAll}
-                key={child.id}
-                node={child}
-              />
-            ))}
-          </ul>
-        </details>
-      ) : (
-        link
+      <div className="knowledge-tree-row">
+        {hasChildren ? (
+          <button
+            aria-controls={childListId}
+            aria-expanded={isOpen}
+            aria-label={`${isOpen ? "收起" : "展开"}${node.title}`}
+            className="knowledge-tree-toggle"
+            onClick={() => onToggle(node.id)}
+            type="button"
+          >
+            {isOpen ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+          </button>
+        ) : <span className="knowledge-tree-toggle-spacer" />}
+        <Link
+          aria-current={active ? "page" : undefined}
+          className={`knowledge-tree-link${active ? " active" : ""}`}
+          href={`/notes/${node.slug}`}
+          prefetch={false}
+        >
+          {!hasChildren && <span className="knowledge-tree-leaf" aria-hidden="true">·</span>}
+          <span>{node.title}</span>
+        </Link>
+      </div>
+      {hasChildren && isOpen && (
+        <ul id={childListId}>
+          {node.children.map((child) => (
+            <PublicTreeNode
+              activeSlug={activeSlug}
+              expanded={expanded}
+              key={child.id}
+              node={child}
+              onToggle={onToggle}
+            />
+          ))}
+        </ul>
       )}
     </li>
   );
+}
+
+function initialExpanded(tree: NoteTreeNode[], activeSlug?: string, expandAll = false) {
+  const ids = new Set<string>();
+  if (expandAll) addAllParents(tree, ids);
+  else if (activeSlug) addActivePath(tree, activeSlug, ids);
+  return ids;
+}
+
+function addAllParents(tree: NoteTreeNode[], ids: Set<string>) {
+  for (const node of tree) {
+    if (node.children.length) {
+      ids.add(node.id);
+      addAllParents(node.children, ids);
+    }
+  }
+}
+
+function addActivePath(tree: NoteTreeNode[], activeSlug: string, ids: Set<string>) {
+  for (const node of tree) {
+    if (!containsNoteSlug(node, activeSlug)) continue;
+    if (node.children.length) ids.add(node.id);
+    addActivePath(node.children, activeSlug, ids);
+    return;
+  }
 }
 
 export function KnowledgeIndex({ tree }: { tree: NoteTreeNode[] }) {
